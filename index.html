@@ -3,291 +3,1098 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2027 Dermatology CMS Financial Impact Calculator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>2027 CMS Cuts & Modifier 25 Dashboard</title>
+    <!-- HTML2Canvas CDN for Native 1080x1080 Graphic Snapshot -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-light: #3b82f6;
+            --bg-dark: #0b1329;
+            --card-bg: #172036;
+            --card-bg-elevated: #1e2942;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-red: #ef4444;
+            --accent-green: #22c55e;
+            --accent-yellow: #eab308;
+            --border-color: #273552;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        /* Header & Search */
+        header {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        h1 {
+            font-size: 1.45rem;
+            color: var(--text-light);
+            font-weight: 700;
+        }
+
+        .search-box {
+            position: relative;
+            width: 100%;
+            max-width: 360px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+            color: var(--text-light);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary-light);
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: var(--card-bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 0 0 8px 8px;
+            max-height: 280px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .search-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .search-item:hover {
+            background-color: var(--primary);
+        }
+
+        /* Doctor Header Card */
+        .doctor-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .doc-details h2 {
+            font-size: 1.35rem;
+            margin-bottom: 4px;
+            font-weight: 700;
+        }
+
+        .doc-details p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            letter-spacing: 0.02em;
+        }
+
+        .doc-allowable {
+            text-align: right;
+        }
+
+        .doc-allowable .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+            display: block;
+        }
+
+        .doc-allowable .value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text-light);
+        }
+
+        /* Modifier 25 Controller */
+        .control-panel {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 22px 24px;
+            margin-bottom: 20px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .slider-title {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .slider-value-display {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-light);
+        }
+
+        input[type=range] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: var(--border-color);
+            outline: none;
+            accent-color: var(--primary-light);
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+
+        .percentile-badge-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background-color: rgba(59, 130, 246, 0.12);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            color: var(--primary-light);
+            margin-bottom: 14px;
+        }
+
+        .slider-helper-text {
+            color: #eab308;
+            font-size: 0.82rem;
+            line-height: 1.4;
+        }
+
+        .slider-helper-text span {
+            color: var(--text-muted);
+        }
+
+        /* Dual Toggle Controls Container */
+        .toggles-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .timeline-toggle-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 14px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 10px 20px;
+            border-radius: 30px;
+        }
+
+        .toggle-label {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: color 0.3s ease;
+        }
+
+        .toggle-label.active {
+            color: var(--text-light);
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+        }
+
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider-toggle {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--border-color);
+            transition: .3s;
+            border-radius: 34px;
+        }
+
+        .slider-toggle:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider-toggle.red-switch {
+            background-color: var(--accent-red);
+        }
+
+        input:checked + .slider-toggle.blue-switch {
+            background-color: var(--primary-light);
+        }
+
+        input:checked + .slider-toggle:before {
+            transform: translateX(22px);
+        }
+
+        /* 3-Column Cut Grid */
+        .cuts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .cut-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 18px 20px;
+            position: relative;
+        }
+
+        .cut-card.accent-card {
+            border: 1px solid var(--accent-yellow);
+            border-left: 4px solid var(--accent-yellow);
+        }
+
+        .cut-card-title {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .cut-card-title span.badge {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--accent-red);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.65rem;
+        }
+
+        .cut-card-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--accent-red);
+            margin-bottom: 4px;
+        }
+
+        .cut-card-subtext {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+
+        /* Total Impact & Share Section */
+        .total-impact-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .total-impact-box {
+            background: linear-gradient(135deg, rgba(127, 29, 29, 0.35), rgba(153, 27, 27, 0.18));
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: 12px;
+            padding: 24px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .impact-details h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--text-light);
+        }
+
+        .impact-details p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .impact-values {
+            text-align: right;
+        }
+
+        .impact-values .main-loss {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--accent-red);
+            line-height: 1.1;
+        }
+
+        .impact-values .percent-loss {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-red);
+            margin-top: 4px;
+        }
+
+        /* Centered Share Button Bar */
+        .share-bar {
+            display: flex;
+            justify-content: center;
+            margin-top: 4px;
+        }
+
+        .btn-share {
+            background-color: var(--primary-light);
+            color: #ffffff;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+        }
+
+        .btn-share:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .btn-share:active {
+            transform: translateY(0);
+        }
+
+        .btn-share svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* Toast Alert Popup */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background-color: #10b981;
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Hidden Native 1080x1080 Social Share Card Element */
+        #social-share-card {
+            position: fixed;
+            left: -9999px;
+            top: -9999px;
+            width: 1080px;
+            height: 1080px;
+            background: #0f172a;
+            color: #ffffff;
+            padding: 56px 64px 44px 64px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border: 4px solid #334155;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .social-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 3px solid #1e293b;
+            padding-bottom: 24px;
+        }
+
+        .social-card-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #ef4444;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .social-doc-name {
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: #f8fafc;
+            margin-top: 6px;
+        }
+
+        .social-doc-practice {
+            font-size: 1.35rem;
+            color: #94a3b8;
+        }
+
+        .social-allowable-box {
+            text-align: right;
+        }
+
+        .social-allowable-label {
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            color: #94a3b8;
+            letter-spacing: 0.04em;
+        }
+
+        .social-allowable-val {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #cbd5e1;
+        }
+
+        .social-impact-hero {
+            background: linear-gradient(135deg, rgba(127, 29, 29, 0.55), rgba(153, 27, 27, 0.35));
+            border: 3px solid #ef4444;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .social-impact-label {
+            font-size: 1.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #fca5a5;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .social-impact-dollar {
+            font-size: 5.6rem;
+            font-weight: 900;
+            color: #ef4444;
+            line-height: 1;
+        }
+
+        .social-impact-pct {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #fca5a5;
+            margin-top: 10px;
+        }
+
+        .social-breakdown-chips {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 8px;
+        }
+
+        .social-chip {
+            background: #1e293b;
+            border: 2px solid #334155;
+            border-radius: 14px;
+            padding: 18px;
+            flex: 1;
+            text-align: center;
+        }
+
+        .social-chip-title {
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .social-chip-val {
+            font-size: 1.55rem;
+            font-weight: 800;
+            color: #ef4444;
+        }
+
+        /* Disclaimer & Sub-footer in Social Graphic */
+        .social-footer {
+            border-top: 2px solid #1e293b;
+            padding-top: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .social-disclaimer {
+            font-size: 0.92rem;
+            line-height: 1.35;
+            color: #64748b;
+            text-align: center;
+        }
+
+        .social-subfooter {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.15rem;
+            color: #64748b;
+        }
+
+        .social-subfooter strong {
+            color: #3b82f6;
+        }
+
+        @media (max-width: 768px) {
+            header, .doctor-card, .total-impact-box {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .doc-allowable, .impact-values {
+                text-align: left;
+                margin-top: 10px;
+            }
+            .search-box {
+                max-width: 100%;
+            }
+        }
+    </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8 font-sans">
-    <div class="max-w-4xl mx-auto">
-        
-        <!-- Header -->
-        <header class="mb-8 text-center">
-            <h1 class="text-3xl font-bold text-sky-400 mb-2">2027 Medicare Fee Impact Estimator</h1>
-            <p class="text-slate-400">Search by Physician Name or 10-digit NPI to project practice cuts under proposed CMS policy changes.</p>
-        </header>
+<body>
 
-        <!-- Search Bar & Autocomplete Container -->
-        <div id="searchContainer" class="relative bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl mb-8">
-            <div class="flex flex-col sm:flex-row gap-4">
-                <div class="relative flex-1">
-                    <input type="text" id="searchInput" 
-                           placeholder="Search Doctor Name or NPI (e.g. John Smith, Smith, John, or 1234567890)" 
-                           oninput="onSearchInput()" 
-                           onkeydown="if(event.key === 'Enter') lookupProvider()"
-                           autocomplete="off"
-                           class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white text-lg focus:outline-none focus:border-sky-500">
-                    
-                    <!-- Autocomplete Dropdown List -->
-                    <div id="autocompleteList" 
-                         class="hidden absolute left-0 right-0 top-full mt-2 bg-slate-800 border border-slate-700 rounded-lg shadow-2xl z-50 max-h-72 overflow-y-auto">
-                    </div>
-                </div>
-
-                <button onclick="lookupProvider()" 
-                        class="bg-sky-500 hover:bg-sky-600 font-bold px-8 py-3 rounded-lg text-lg transition-colors">
-                    Look Up Impact
-                </button>
-            </div>
-            <p id="errorMsg" class="text-rose-400 mt-3 text-sm hidden"></p>
+<div class="container">
+    <header>
+        <h1>2027 CMS Cuts & Modifier 25 Dashboard</h1>
+        <div class="search-box">
+            <input type="text" id="provider-search" placeholder="Search Doctor Name or NPI..." onkeyup="filterProviders()">
+            <div id="search-results" class="search-results"></div>
         </div>
+    </header>
 
-        <!-- Dashboard Output (Hidden by Default) -->
-        <div id="resultsCard" class="hidden space-y-6">
-            
-            <!-- Provider Info Header -->
-            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h2 id="docName" class="text-2xl font-bold text-white">Dr. First Last</h2>
-                    <p id="docPractice" class="text-slate-400">Practice Name</p>
-                    <p id="docNpi" class="text-xs text-sky-400 font-mono mt-1">NPI: 0000000000</p>
-                </div>
-                <div class="bg-slate-900 px-6 py-3 rounded-lg border border-slate-700 text-right">
-                    <span class="text-xs text-slate-400 uppercase tracking-wider block">2026 Medicare Allowable</span>
-                    <span id="rev2026" class="text-2xl font-bold text-slate-200">$0</span>
-                </div>
-            </div>
-
-            <!-- Dynamic Interactive Control Panel -->
-            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
-                <div class="flex justify-between items-center mb-4">
-                    <label class="font-bold text-lg text-slate-200">Modifier 25 Encounter Usage Rate:</label>
-                    <span id="sliderValue" class="text-2xl font-extrabold text-amber-400 font-mono">0.0%</span>
-                </div>
-                <input type="range" id="mod25Slider" min="0" max="100" step="0.5" value="0" 
-                       oninput="recalculate()" 
-                       class="w-full h-3 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-400">
-                <p class="text-xs text-slate-400 mt-3">
-                    * <span class="text-amber-400 font-semibold">Default Setting:</span> Pre-set to your estimated same-day procedure rate based on your billing volume. Drag the slider to reflect your actual practice workflow.
-                </p>
-            </div>
-
-            <!-- Impact Breakdown Summary Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <!-- CF Cut -->
-                <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
-                    <span class="text-xs text-slate-400 uppercase tracking-wider block mb-1">1. Conversion Factor Cut</span>
-                    <div id="cfDollars" class="text-xl font-bold text-rose-400">-$0</div>
-                    <div id="cfPct" class="text-xs text-slate-400 mt-1">-1.68% (Universal)</div>
-                </div>
-
-                <!-- RVU Shift Cut -->
-                <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
-                    <span class="text-xs text-slate-400 uppercase tracking-wider block mb-1">2. RVU Reweighting Cut</span>
-                    <div id="rvuDollars" class="text-xl font-bold text-rose-400">-$0</div>
-                    <div id="rvuPct" class="text-xs text-slate-400 mt-1">0.00% of baseline</div>
-                </div>
-
-                <!-- Mod 25 Penalty Cut -->
-                <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 border-l-4 border-l-amber-400">
-                    <span class="text-xs text-slate-400 uppercase tracking-wider block mb-1">3. Modifier 25 Cut</span>
-                    <div id="mod25Dollars" class="text-xl font-bold text-amber-400">-$0</div>
-                    <div id="mod25Pct" class="text-xs text-slate-400 mt-1">0.00% of baseline</div>
-                </div>
-            </div>
-
-            <!-- Grand Net Total Hero Card -->
-            <div class="bg-gradient-to-r from-rose-950/60 to-slate-800 p-6 rounded-xl border border-rose-800/50 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div>
-                    <h3 class="text-lg font-bold text-slate-200">Projected Total 2027 Net Impact</h3>
-                    <p class="text-xs text-slate-400">Includes Conversion Factor drop, RVU reweighting, and Modifier 25 penalty.</p>
-                </div>
-                <div class="text-right">
-                    <div id="totalDollars" class="text-3xl font-black text-rose-400">-$0</div>
-                    <div id="totalPct" class="text-lg font-bold text-rose-300">0.00% Net Cut</div>
-                </div>
-            </div>
-
+    <div class="doctor-card">
+        <div class="doc-details">
+            <h2 id="doc-name">All U.S. Dermatology Practices</h2>
+            <p id="doc-practice">National Total (All Dermatology Providers)</p>
+        </div>
+        <div class="doc-allowable">
+            <span class="label">2026 Baseline Medicare Allowable</span>
+            <div class="value" id="baseline-allowable">$0</div>
         </div>
     </div>
 
-    <!-- Application Script -->
-    <script>
-        let providerDatabase = [];
-        let currentDoc = null;
+    <div class="control-panel">
+        <div class="slider-header">
+            <span class="slider-title">Modifier 25 Encounter Usage Rate:</span>
+            <span class="slider-value-display" id="slider-pct-display">0.0%</span>
+        </div>
+        <input type="range" id="mod25-slider" min="0" max="100" step="0.5" value="0" oninput="onSliderChange()">
+        
+        <div id="percentile-badge" class="percentile-badge-box">
+            Selected Usage Rate: <strong>-</strong> | Peer Benchmarking: <strong>- Percentile Nationally</strong>
+        </div>
 
-        // Fetch pre-calculated JSON on page load
-        window.onload = async () => {
-            try {
-                const response = await fetch('provider_data.json');
-                providerDatabase = await response.json();
-            } catch (err) {
-                showError("Error loading provider database. Ensure provider_data.json is present in the same directory.");
+        <div class="slider-helper-text">
+            * Default Setting: <span>Pre-set to estimated same-day procedure rate based on billing volume. Drag the slider to reflect actual practice workflow.</span>
+        </div>
+    </div>
+
+    <!-- Dual Toggle Switch Controls -->
+    <div class="toggles-wrapper">
+        <!-- Toggle 1: Timeline -->
+        <div class="timeline-toggle-container">
+            <span class="toggle-label active" id="label-2027">2027 Phase-In</span>
+            <label class="switch">
+                <input type="checkbox" id="timeline-toggle" onchange="onToggleChange()">
+                <span class="slider-toggle red-switch"></span>
+            </label>
+            <span class="toggle-label" id="label-full">Fully Implemented (2028+)</span>
+        </div>
+
+        <!-- Toggle 2: Dollar vs Percentage Display -->
+        <div class="timeline-toggle-container">
+            <span class="toggle-label active" id="label-dollar">Dollars ($)</span>
+            <label class="switch">
+                <input type="checkbox" id="percent-toggle" onchange="onToggleChange()">
+                <span class="slider-toggle blue-switch"></span>
+            </label>
+            <span class="toggle-label" id="label-percent">Percentages Only (%)</span>
+        </div>
+    </div>
+
+    <!-- Cuts Grid -->
+    <div class="cuts-grid">
+        <div class="cut-card">
+            <div class="cut-card-title">1. Conversion Factor Cut</div>
+            <div class="cut-card-value" id="cf-cut-val">-$0</div>
+            <div class="cut-card-subtext" id="cf-cut-pct">-1.68% of baseline</div>
+        </div>
+        <div class="cut-card">
+            <div class="cut-card-title">
+                2. RVU Reweighting
+                <span id="rvu-badge" class="badge" style="display:none;">FULL</span>
+            </div>
+            <div class="cut-card-value" id="rvu-cut-val">-$0</div>
+            <div class="cut-card-subtext" id="rvu-cut-pct">-0.00% of baseline</div>
+        </div>
+        <div class="cut-card accent-card">
+            <div class="cut-card-title">3. Modifier 25 Cut</div>
+            <div class="cut-card-value" id="mod25-cut-val">-$0</div>
+            <div class="cut-card-subtext" id="mod25-cut-pct">-0.00% of baseline</div>
+        </div>
+    </div>
+
+    <!-- Total Impact Box & Centered Share Button Bar -->
+    <div class="total-impact-wrapper">
+        <div class="total-impact-box">
+            <div class="impact-details">
+                <h3 id="total-impact-title">Projected Total Net Impact (2027)</h3>
+                <p>Includes Conversion Factor drop, RVU reweighting, and Modifier 25 penalty.</p>
+            </div>
+            <div class="impact-values">
+                <div class="main-loss" id="total-dollar-cut">-$0</div>
+                <div class="percent-loss" id="total-percent-loss">-0.00% Net Cut</div>
+            </div>
+        </div>
+
+        <div class="share-bar">
+            <button class="btn-share" onclick="copySocialGraphic()">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="18" cy="5" r="3"></circle>
+                    <circle cx="6" cy="12" r="3"></circle>
+                    <circle cx="18" cy="19" r="3"></circle>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                </svg>
+                Share
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Alert Popup -->
+<div id="toast-msg" class="toast">✅ 1080x1080 Graphic copied! Ready to paste into Instagram or LinkedIn.</div>
+
+<!-- Hidden Native 1080x1080 Social Share Card Element -->
+<div id="social-share-card">
+    <div class="social-card-header">
+        <div>
+            <div class="social-card-title">2027 CMS Medicare Cuts</div>
+            <div class="social-doc-name" id="sc-doc-name">All U.S. Dermatology Practices</div>
+            <div class="social-doc-practice" id="sc-doc-practice">National Total (All Dermatology Providers)</div>
+        </div>
+        <div class="social-allowable-box">
+            <div class="social-allowable-label">2026 Allowable</div>
+            <div class="social-allowable-val" id="sc-allowable">$0</div>
+        </div>
+    </div>
+
+    <div class="social-impact-hero">
+        <div class="social-impact-label" id="sc-timeline-label">Projected Net Practice Loss (2027)</div>
+        <div class="social-impact-dollar" id="sc-total-dollar">-$0</div>
+        <div class="social-impact-pct" id="sc-total-pct">-0.0% Net Cut</div>
+    </div>
+
+    <div class="social-breakdown-chips">
+        <div class="social-chip">
+            <div class="social-chip-title">CF Drop</div>
+            <div class="social-chip-val" id="sc-cf-cut">-$0</div>
+        </div>
+        <div class="social-chip">
+            <div class="social-chip-title">RVU Reweight</div>
+            <div class="social-chip-val" id="sc-rvu-cut">-$0</div>
+        </div>
+        <div class="social-chip">
+            <div class="social-chip-title">Mod 25 Cut</div>
+            <div class="social-chip-val" id="sc-mod25-cut">-$0</div>
+        </div>
+    </div>
+
+    <div class="social-footer">
+        <div class="social-disclaimer">
+            <strong style="color:#ef4444;">Disclaimer</strong>: Figures represent overall practice revenue used to care for patients—including clinical staff salaries, equipment, rent, utilities, supplies, and taxes—not physician compensation.
+        </div>
+        <div class="social-subfooter">
+            <span>Calculated via <strong>CMS Medicare Impact Estimator</strong></span>
+            <span>#StopCMSCuts #SaveDermatology</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    let providersData = [];
+    let currentDoctor = null;
+    let aggregateProfile = null;
+
+    fetch('provider_data.json')
+        .then(response => response.json())
+        .then(data => {
+            providersData = data;
+            if (providersData.length > 0) {
+                aggregateProfile = createAggregateProfile(providersData);
+                loadProviderProfile(aggregateProfile);
             }
-        };
+        })
+        .catch(err => console.error('Error loading provider_data.json:', err));
 
-        function normalizeStr(str) {
-            return (str || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    function createAggregateProfile(data) {
+        const totalRev2026 = data.reduce((acc, p) => acc + (p.rev_2026 || 0), 0);
+        const totalCfCut = data.reduce((acc, p) => acc + (p.cf_dollar_cut || 0), 0);
+        const totalEms = data.reduce((acc, p) => acc + (p.total_ems || 0), 0);
+        
+        // Compute average default Mod 25 rate weighted by total visits
+        const weightedMod25Pct = totalEms > 0 
+            ? data.reduce((acc, p) => acc + ((p.default_mod25_pct || 0) * (p.total_ems || 0)), 0) / totalEms 
+            : 50.0;
+
+        return {
+            isAggregate: true,
+            provider_name: "All U.S. Dermatology Practices",
+            practice_name: `National Total (${data.length.toLocaleString()} Dermatology Providers)`,
+            npi: "NATIONAL-TOTAL",
+            rev_2026: totalRev2026,
+            cf_dollar_cut: totalCfCut,
+            total_ems: totalEms,
+            default_mod25_pct: Math.round(weightedMod25Pct * 10) / 10,
+            national_percentile: 50
+        };
+    }
+
+    function filterProviders() {
+        const query = document.getElementById('provider-search').value.toLowerCase().trim();
+        const resultsContainer = document.getElementById('search-results');
+        
+        if (query.length < 2) {
+            resultsContainer.style.display = 'none';
+            return;
         }
 
-        function onSearchInput() {
-            const inputVal = document.getElementById('searchInput').value;
-            const dropdown = document.getElementById('autocompleteList');
-            const errorMsg = document.getElementById('errorMsg');
-            errorMsg.classList.add('hidden');
+        const matches = providersData.filter(p => 
+            p.provider_name.toLowerCase().includes(query) || 
+            p.npi.includes(query) ||
+            p.practice_name.toLowerCase().includes(query)
+        ).slice(0, 8);
 
-            if (!inputVal || inputVal.trim().length < 2) {
-                dropdown.innerHTML = '';
-                dropdown.classList.add('hidden');
-                return;
-            }
+        let html = `
+            <div class="search-item" onclick="selectAggregate()" style="border-bottom: 2px solid var(--primary-light); background: rgba(59, 130, 246, 0.12);">
+                <strong style="color: var(--primary-light);">🌐 All U.S. Dermatology Practices (National Aggregate)</strong>
+                <br><small style="color: var(--text-light)">View total national Medicare allowable & aggregate cuts</small>
+            </div>
+        `;
 
-            const normQuery = normalizeStr(inputVal);
-            const tokens = normQuery.split(' ').filter(t => t.length > 0);
-
-            const matches = providerDatabase.filter(p => {
-                const normName = normalizeStr(p.provider_name);
-                const normNpi = (p.npi || '').trim();
-                const normPractice = normalizeStr(p.practice_name);
-
-                // If query is pure numbers, match NPI prefix/contains
-                if (/^\d+$/.test(normQuery)) {
-                    return normNpi.includes(normQuery);
-                }
-
-                // Check if ALL search tokens exist in provider name or practice name
-                return tokens.every(token => normName.includes(token) || normPractice.includes(token));
-            }).slice(0, 15); // Show top 15 results
-
-            if (matches.length === 0) {
-                dropdown.innerHTML = `<div class="p-3 text-slate-400 text-sm italic">No matching providers found</div>`;
-                dropdown.classList.remove('hidden');
-                return;
-            }
-
-            dropdown.innerHTML = matches.map(p => `
-                <div onclick="selectProvider('${p.npi}')" 
-                     class="p-3 hover:bg-slate-700 cursor-pointer border-b border-slate-700/50 last:border-0 transition-colors">
-                    <div class="font-bold text-sky-400">${escapeHtml(p.provider_name)}</div>
-                    <div class="text-xs text-slate-300 flex justify-between mt-1">
-                        <span>${escapeHtml(p.practice_name)}</span>
-                        <span class="font-mono text-slate-400">NPI: ${p.npi}</span>
-                    </div>
+        if (matches.length > 0) {
+            html += matches.map(p => `
+                <div class="search-item" onclick="selectProvider('${p.npi}')">
+                    <strong>${p.provider_name}</strong> (${p.practice_name})
+                    <br><small style="color: var(--text-muted)">NPI: ${p.npi}</small>
                 </div>
             `).join('');
-
-            dropdown.classList.remove('hidden');
         }
 
-        function escapeHtml(str) {
-            return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        resultsContainer.innerHTML = html;
+        resultsContainer.style.display = 'block';
+    }
+
+    function selectAggregate() {
+        if (aggregateProfile) {
+            loadProviderProfile(aggregateProfile);
+            document.getElementById('search-results').style.display = 'none';
+            document.getElementById('provider-search').value = '';
+        }
+    }
+
+    function selectProvider(npi) {
+        const selected = providersData.find(p => p.npi === npi);
+        if (selected) {
+            loadProviderProfile(selected);
+            document.getElementById('search-results').style.display = 'none';
+            document.getElementById('provider-search').value = '';
+        }
+    }
+
+    function loadProviderProfile(doctor) {
+        currentDoctor = doctor;
+        document.getElementById('doc-name').innerText = doctor.provider_name;
+        document.getElementById('doc-practice').innerText = doctor.isAggregate ? doctor.practice_name : `${doctor.practice_name} | NPI: ${doctor.npi}`;
+        
+        const slider = document.getElementById('mod25-slider');
+        slider.value = doctor.default_mod25_pct;
+
+        recalculateCuts();
+    }
+
+    function onSliderChange() {
+        recalculateCuts();
+    }
+
+    function onToggleChange() {
+        const isFullyImplemented = document.getElementById('timeline-toggle').checked;
+        const isPercentOnly = document.getElementById('percent-toggle').checked;
+        
+        // Update Timeline Toggle Labels
+        if (isFullyImplemented) {
+            document.getElementById('label-full').classList.add('active');
+            document.getElementById('label-2027').classList.remove('active');
+            document.getElementById('total-impact-title').innerText = "Projected Total Net Impact (Fully Implemented)";
+            document.getElementById('rvu-badge').style.display = 'block';
+        } else {
+            document.getElementById('label-2027').classList.add('active');
+            document.getElementById('label-full').classList.remove('active');
+            document.getElementById('total-impact-title').innerText = "Projected Total Net Impact (2027 Phase-In)";
+            document.getElementById('rvu-badge').style.display = 'none';
         }
 
-        function selectProvider(npi) {
-            const dropdown = document.getElementById('autocompleteList');
-            dropdown.classList.add('hidden');
-
-            currentDoc = providerDatabase.find(p => p.npi === npi);
-            if (!currentDoc) {
-                showError("Provider details could not be loaded.");
-                return;
-            }
-
-            document.getElementById('searchInput').value = `${currentDoc.provider_name} (NPI: ${currentDoc.npi})`;
-
-            // Populate metadata
-            document.getElementById('docName').innerText = currentDoc.provider_name;
-            document.getElementById('docPractice').innerText = currentDoc.practice_name;
-            document.getElementById('docNpi').innerText = `NPI: ${currentDoc.npi}`;
-            document.getElementById('rev2026').innerText = formatCurrency(currentDoc.rev_2026);
-
-            // Set Slider to Default Estimated Mod 25 Usage
-            const slider = document.getElementById('mod25Slider');
-            slider.value = currentDoc.default_mod25_pct;
-
-            document.getElementById('resultsCard').classList.remove('hidden');
-            recalculate();
+        // Update Percent Toggle Labels
+        if (isPercentOnly) {
+            document.getElementById('label-percent').classList.add('active');
+            document.getElementById('label-dollar').classList.remove('active');
+        } else {
+            document.getElementById('label-dollar').classList.add('active');
+            document.getElementById('label-percent').classList.remove('active');
         }
 
-        function lookupProvider() {
-            const inputVal = document.getElementById('searchInput').value.trim();
-            if (!inputVal) return;
+        recalculateCuts();
+    }
 
-            // Check direct NPI match first
-            let doc = providerDatabase.find(p => p.npi === inputVal);
+    function recalculateCuts() {
+        if (!currentDoctor) return;
+
+        const isFullyImplemented = document.getElementById('timeline-toggle').checked;
+        const isPercentOnly = document.getElementById('percent-toggle').checked;
+        const selectedPct = parseFloat(document.getElementById('mod25-slider').value);
+        document.getElementById('slider-pct-display').innerText = selectedPct.toFixed(1) + '%';
+
+        // Update Peer Benchmarking Badge
+        if (currentDoctor.isAggregate) {
+            document.getElementById('percentile-badge').innerHTML = `
+                <span>Selected Usage Rate: <strong>${selectedPct.toFixed(1)}%</strong></span>
+                <span>| Peer Benchmarking: <strong>National Aggregate View</strong></span>
+            `;
+        } else {
+            const currentPercentile = getPercentileFromRate(selectedPct);
+            document.getElementById('percentile-badge').innerHTML = `
+                <span>Selected Usage Rate: <strong>${selectedPct.toFixed(1)}%</strong></span>
+                <span>| Peer Benchmarking: <strong>${currentPercentile}th Percentile Nationally</strong></span>
+            `;
+        }
+
+        // 1. Calculate Cut Totals (Aggregate or Individual Doctor)
+        let totalRev2026 = 0;
+        let cfDollarCut = 0;
+        let rvuDollarCut = 0;
+        let mod25Cut = 0;
+
+        const sliderRatio = selectedPct / 100.0;
+
+        if (currentDoctor.isAggregate) {
+            // Precise sum across all dermatology providers
+            providersData.forEach(p => {
+                totalRev2026 += p.rev_2026 || 0;
+                cfDollarCut += p.cf_dollar_cut || 0;
+                
+                const pRvuCut = isFullyImplemented ? p.rvu_dollar_cut_full : p.rvu_dollar_cut;
+                rvuDollarCut += pRvuCut || 0;
+
+                const avgEm = isFullyImplemented ? p.avg_em_val_full : p.avg_em_val;
+                const avgProc = isFullyImplemented ? p.avg_proc_val_full : p.avg_proc_val;
+                const penaltyPerEncounter = Math.min(avgEm, avgProc) * 0.50;
+                const affectedVisits = (p.total_ems || 0) * sliderRatio;
+                mod25Cut += -1 * (affectedVisits * penaltyPerEncounter);
+            });
+        } else {
+            totalRev2026 = currentDoctor.rev_2026;
+            cfDollarCut = currentDoctor.cf_dollar_cut;
+            rvuDollarCut = isFullyImplemented ? currentDoctor.rvu_dollar_cut_full : currentDoctor.rvu_dollar_cut;
+
+            const avgEm = isFullyImplemented ? currentDoctor.avg_em_val_full : currentDoctor.avg_em_val;
+            const avgProc = isFullyImplemented ? currentDoctor.avg_proc_val_full : currentDoctor.avg_proc_val;
+            const penaltyPerEncounter = Math.min(avgEm, avgProc) * 0.50;
+            const affectedVisits = currentDoctor.total_ems * sliderRatio;
+            mod25Cut = -1 * (affectedVisits * penaltyPerEncounter);
+        }
+
+        const cfPct = -1.68;
+        const rvuPct = (rvuDollarCut / totalRev2026) * 100;
+        const mod25PctOfBaseline = (mod25Cut / totalRev2026) * 100;
+
+        const totalDollarCut = cfDollarCut + rvuDollarCut + mod25Cut;
+        const totalPercentLoss = (totalDollarCut / totalRev2026) * 100;
+
+        // 2. Render Screen UI Based on Mode (Dollar vs Percentages Only)
+        if (isPercentOnly) {
+            document.getElementById('baseline-allowable').innerText = "100.0% Baseline";
             
-            if (!doc) {
-                // Try searching top matching provider from name/NPI
-                const normQuery = normalizeStr(inputVal);
-                const tokens = normQuery.split(' ').filter(t => t.length > 0);
+            document.getElementById('cf-cut-val').innerText = `${cfPct.toFixed(2)}%`;
+            document.getElementById('cf-cut-pct').innerText = "Conversion Factor drop";
 
-                doc = providerDatabase.find(p => {
-                    const normName = normalizeStr(p.provider_name);
-                    const normNpi = (p.npi || '').trim();
-                    if (/^\d+$/.test(normQuery) && normNpi === normQuery) return true;
-                    return tokens.every(token => normName.includes(token));
-                });
-            }
+            document.getElementById('rvu-cut-val').innerText = `${rvuPct.toFixed(2)}%`;
+            document.getElementById('rvu-cut-pct').innerText = "RVU reweighting shift";
 
-            if (doc) {
-                selectProvider(doc.npi);
-            } else {
-                showError("No doctor found matching that name or NPI. Please select a provider from the suggestion dropdown.");
-            }
-        }
+            document.getElementById('mod25-cut-val').innerText = `${mod25PctOfBaseline.toFixed(2)}%`;
+            document.getElementById('mod25-cut-pct').innerText = "Modifier 25 penalty";
 
-        function recalculate() {
-            if (!currentDoc) return;
+            document.getElementById('total-dollar-cut').innerText = `${totalPercentLoss.toFixed(2)}% Net Cut`;
+            document.getElementById('total-percent-loss').innerText = "Net Practice Revenue Loss";
 
-            const mod25PctInput = parseFloat(document.getElementById('mod25Slider').value);
-            document.getElementById('sliderValue').innerText = `${mod25PctInput.toFixed(1)}%`;
+            // Sync Hidden 1080x1080 Social Media Card
+            document.getElementById('sc-allowable').innerText = "100.0%";
+            document.getElementById('sc-total-dollar').innerText = `${totalPercentLoss.toFixed(1)}%`;
+            document.getElementById('sc-total-pct').innerText = "Net Practice Revenue Loss";
 
-            // 1. Fixed CF & RVU Cuts
-            const cfCut = currentDoc.cf_dollar_cut;
-            const rvuCut = currentDoc.rvu_dollar_cut;
-
-            // 2. Dynamic Modifier 25 Dollar Cut Calculation with Safe Fallback
-            const mod25UsageRate = mod25PctInput / 100.0;
-            const avgEm = currentDoc.avg_em_val || 0;
-            const avgProc = currentDoc.avg_proc_val || 0;
-            const penaltyPerEncounter = Math.min(avgEm, avgProc > 0 ? avgProc : avgEm) * 0.50;
+            document.getElementById('sc-cf-cut').innerText = `${cfPct.toFixed(2)}%`;
+            document.getElementById('sc-rvu-cut').innerText = `${rvuPct.toFixed(2)}%`;
+            document.getElementById('sc-mod25-cut').innerText = `${mod25PctOfBaseline.toFixed(2)}%`;
+        } else {
+            document.getElementById('baseline-allowable').innerText = formatCurrency(totalRev2026);
             
-            const mod25Cut = -1 * (currentDoc.total_ems * mod25UsageRate * penaltyPerEncounter);
+            document.getElementById('cf-cut-val').innerText = formatCurrency(cfDollarCut);
+            document.getElementById('cf-cut-pct').innerText = `-1.68% of baseline`;
 
-            // 3. Totals
-            const totalLoss = cfCut + rvuCut + mod25Cut;
-            const totalPct = (totalLoss / currentDoc.rev_2026) * 100;
+            document.getElementById('rvu-cut-val').innerText = formatCurrency(rvuDollarCut);
+            document.getElementById('rvu-cut-pct').innerText = `${rvuPct.toFixed(2)}% of baseline`;
 
-            // Update UI Elements
-            document.getElementById('cfDollars').innerText = formatCurrency(cfCut);
-            document.getElementById('cfPct').innerText = `${((cfCut / currentDoc.rev_2026) * 100).toFixed(2)}% of baseline`;
+            document.getElementById('mod25-cut-val').innerText = formatCurrency(mod25Cut);
+            document.getElementById('mod25-cut-pct').innerText = `${mod25PctOfBaseline.toFixed(2)}% of baseline`;
 
-            document.getElementById('rvuDollars').innerText = formatCurrency(rvuCut);
-            document.getElementById('rvuPct').innerText = `${((rvuCut / currentDoc.rev_2026) * 100).toFixed(2)}% of baseline`;
+            document.getElementById('total-dollar-cut').innerText = formatCurrency(totalDollarCut);
+            document.getElementById('total-percent-loss').innerText = `${totalPercentLoss.toFixed(2)}% Net Cut`;
 
-            document.getElementById('mod25Dollars').innerText = formatCurrency(mod25Cut);
-            document.getElementById('mod25Pct').innerText = `${((mod25Cut / currentDoc.rev_2026) * 100).toFixed(2)}% of baseline`;
+            // Sync Hidden 1080x1080 Social Media Card
+            document.getElementById('sc-allowable').innerText = formatCurrency(totalRev2026);
+            document.getElementById('sc-total-dollar').innerText = formatCurrency(totalDollarCut);
+            document.getElementById('sc-total-pct').innerText = `${totalPercentLoss.toFixed(1)}% Net Cut`;
 
-            document.getElementById('totalDollars').innerText = formatCurrency(totalLoss);
-            document.getElementById('totalPct').innerText = `${totalPct.toFixed(2)}% Net Cut`;
+            document.getElementById('sc-cf-cut').innerText = formatCurrency(cfDollarCut);
+            document.getElementById('sc-rvu-cut').innerText = formatCurrency(rvuDollarCut);
+            document.getElementById('sc-mod25-cut').innerText = formatCurrency(mod25Cut);
         }
 
-        function formatCurrency(val) {
-            const sign = val < 0 ? '-' : '';
-            return `${sign}$${Math.abs(val).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})}`;
-        }
+        // Always sync common social card metadata
+        document.getElementById('sc-doc-name').innerText = currentDoctor.provider_name;
+        document.getElementById('sc-doc-practice').innerText = currentDoctor.isAggregate ? currentDoctor.practice_name : currentDoctor.practice_name;
+        document.getElementById('sc-timeline-label').innerText = isFullyImplemented ? "Projected Loss (Fully Implemented)" : "Projected Loss (2027 Phase-In)";
+    }
 
-        function showError(msg) {
-            const errorMsg = document.getElementById('errorMsg');
-            errorMsg.innerText = msg;
-            errorMsg.classList.remove('hidden');
-        }
-
-        // Close dropdown when clicking anywhere outside search box
-        document.addEventListener('click', (e) => {
-            const container = document.getElementById('searchContainer');
-            if (container && !container.contains(e.target)) {
-                document.getElementById('autocompleteList').classList.add('hidden');
-            }
+    // Social Media Share Graphic Engine (Native 1080x1080)
+    function copySocialGraphic() {
+        const cardElem = document.getElementById('social-share-card');
+        
+        html2canvas(cardElem, {
+            width: 1080,
+            height: 1080,
+            scale: 1,
+            useCORS: true,
+            backgroundColor: '#0f172a'
+        }).then(canvas => {
+            canvas.toBlob(blob => {
+                if (navigator.clipboard && window.ClipboardItem) {
+                    const item = new ClipboardItem({ 'image/png': blob });
+                    navigator.clipboard.write([item]).then(() => {
+                        showToast("✅ 1080x1080 Graphic copied! Ready to paste into Instagram, LinkedIn, or X.");
+                    }).catch(err => {
+                        downloadBlobFallback(blob);
+                    });
+                } else {
+                    downloadBlobFallback(blob);
+                }
+            }, 'image/png');
         });
-    </script>
+    }
+
+    function downloadBlobFallback(blob) {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `CMS_Medicare_Impact_${currentDoctor ? currentDoctor.npi : 'Graphic'}.png`;
+        link.click();
+        showToast("📥 1080x1080 Graphic downloaded! Ready to upload.");
+    }
+
+    function showToast(message) {
+        const toast = document.getElementById('toast-msg');
+        toast.innerText = message;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3500);
+    }
+
+    function getPercentileFromRate(rate) {
+        if (rate <= 15.0) return Math.round((rate / 15.0) * 0);
+        if (rate <= 45.0) return Math.round(0 + ((rate - 15.0) / (45.0 - 15.0)) * 25);
+        if (rate <= 60.0) return Math.round(25 + ((rate - 45.0) / (60.0 - 45.0)) * 25);
+        if (rate <= 74.0) return Math.round(50 + ((rate - 60.0) / (74.0 - 60.0)) * 25);
+        if (rate <= 82.0) return Math.round(75 + ((rate - 74.0) / (82.0 - 74.0)) * 15);
+        return Math.min(99, Math.round(90 + ((rate - 82.0) / (92.0 - 82.0)) * 10));
+    }
+
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            maximumFractionDigits: 0
+        }).format(amount);
+    }
+</script>
+
 </body>
 </html>
