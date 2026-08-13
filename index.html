@@ -60,7 +60,7 @@
         .search-box {
             position: relative;
             width: 100%;
-            max-width: 360px;
+            max-width: 380px;
         }
 
         .search-box input {
@@ -87,7 +87,7 @@
             background-color: var(--card-bg-elevated);
             border: 1px solid var(--border-color);
             border-radius: 0 0 8px 8px;
-            max-height: 280px;
+            max-height: 320px;
             overflow-y: auto;
             z-index: 100;
             display: none;
@@ -588,7 +588,7 @@
         }
 
         .social-disclaimer {
-            font-size: 0.92rem;
+            font-size: 1.25rem; /* Increased size so it's larger than the subfooter */
             line-height: 1.35;
             color: #64748b;
             text-align: center;
@@ -598,7 +598,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 1.15rem;
+            font-size: 1.15rem; /* Slightly reduced to emphasize the disclaimer above */
             color: #64748b;
         }
 
@@ -627,7 +627,7 @@
     <header>
         <h1>2027 CMS Cuts & Modifier 25 Dashboard</h1>
         <div class="search-box">
-            <input type="text" id="provider-search" placeholder="Search Doctor Name or NPI..." onkeyup="filterProviders()">
+            <input type="text" id="provider-search" placeholder="Search Doctor, NPI, or State (e.g. Mary)..." onkeyup="filterProviders()">
             <div id="search-results" class="search-results"></div>
         </div>
     </header>
@@ -661,14 +661,14 @@
 
     <!-- Dual Toggle Switch Controls -->
     <div class="toggles-wrapper">
-        <!-- Toggle 1: Timeline -->
+        <!-- Toggle 1: Timeline (Defaults to Fully Implemented) -->
         <div class="timeline-toggle-container">
-            <span class="toggle-label active" id="label-2027">2027 Phase-In</span>
+            <span class="toggle-label" id="label-2027">2027 Phase-In</span>
             <label class="switch">
-                <input type="checkbox" id="timeline-toggle" onchange="onToggleChange()">
+                <input type="checkbox" id="timeline-toggle" onchange="onToggleChange()" checked>
                 <span class="slider-toggle red-switch"></span>
             </label>
-            <span class="toggle-label" id="label-full">Fully Implemented (2028+)</span>
+            <span class="toggle-label active" id="label-full">Fully Implemented (2028+)</span>
         </div>
 
         <!-- Toggle 2: Dollar vs Percentage Display -->
@@ -692,7 +692,7 @@
         <div class="cut-card">
             <div class="cut-card-title">
                 2. RVU Reweighting
-                <span id="rvu-badge" class="badge" style="display:none;">FULL</span>
+                <span id="rvu-badge" class="badge" style="display:block;">FULL</span>
             </div>
             <div class="cut-card-value" id="rvu-cut-val">-$0</div>
             <div class="cut-card-subtext" id="rvu-cut-pct">-0.00% of baseline</div>
@@ -708,7 +708,7 @@
     <div class="total-impact-wrapper">
         <div class="total-impact-box">
             <div class="impact-details">
-                <h3 id="total-impact-title">Projected Total Net Impact (2027)</h3>
+                <h3 id="total-impact-title">Projected Total Net Impact (Fully Implemented)</h3>
                 <p>Includes Conversion Factor drop, RVU reweighting, and Modifier 25 penalty.</p>
             </div>
             <div class="impact-values">
@@ -750,7 +750,7 @@
     </div>
 
     <div class="social-impact-hero">
-        <div class="social-impact-label" id="sc-timeline-label">Projected Net Practice Loss (2027)</div>
+        <div class="social-impact-label" id="sc-timeline-label">Projected Net Practice Loss (Fully Implemented)</div>
         <div class="social-impact-dollar" id="sc-total-dollar">-$0</div>
         <div class="social-impact-pct" id="sc-total-pct">-0.0% Net Cut</div>
     </div>
@@ -782,6 +782,20 @@
 </div>
 
 <script>
+    const US_STATES = {
+        'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California',
+        'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware', 'FL': 'Florida', 'GA': 'Georgia',
+        'HI': 'Hawaii', 'ID': 'Idaho', 'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa',
+        'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland',
+        'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi', 'MO': 'Missouri',
+        'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada', 'NH': 'New Hampshire', 'NJ': 'New Jersey',
+        'NM': 'New Mexico', 'NY': 'New York', 'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio',
+        'OK': 'Oklahoma', 'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina',
+        'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah', 'VT': 'Vermont',
+        'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming',
+        'DC': 'District of Columbia', 'PR': 'Puerto Rico'
+    };
+
     let providersData = [];
     let currentDoctor = null;
     let aggregateProfile = null;
@@ -791,27 +805,27 @@
         .then(data => {
             providersData = data;
             if (providersData.length > 0) {
-                aggregateProfile = createAggregateProfile(providersData);
+                aggregateProfile = createAggregateProfile(providersData, "All U.S. Dermatology Practices", `National Total (${data.length.toLocaleString()} Dermatology Providers)`);
                 loadProviderProfile(aggregateProfile);
             }
         })
         .catch(err => console.error('Error loading provider_data.json:', err));
 
-    function createAggregateProfile(data) {
-        const totalRev2026 = data.reduce((acc, p) => acc + (p.rev_2026 || 0), 0);
-        const totalCfCut = data.reduce((acc, p) => acc + (p.cf_dollar_cut || 0), 0);
-        const totalEms = data.reduce((acc, p) => acc + (p.total_ems || 0), 0);
+    function createAggregateProfile(subset, name, subtext, stateCode = null) {
+        const totalRev2026 = subset.reduce((acc, p) => acc + (p.rev_2026 || 0), 0);
+        const totalCfCut = subset.reduce((acc, p) => acc + (p.cf_dollar_cut || 0), 0);
+        const totalEms = subset.reduce((acc, p) => acc + (p.total_ems || 0), 0);
         
-        // Compute average default Mod 25 rate weighted by total visits
         const weightedMod25Pct = totalEms > 0 
-            ? data.reduce((acc, p) => acc + ((p.default_mod25_pct || 0) * (p.total_ems || 0)), 0) / totalEms 
+            ? subset.reduce((acc, p) => acc + ((p.default_mod25_pct || 0) * (p.total_ems || 0)), 0) / totalEms 
             : 50.0;
 
         return {
             isAggregate: true,
-            provider_name: "All U.S. Dermatology Practices",
-            practice_name: `National Total (${data.length.toLocaleString()} Dermatology Providers)`,
-            npi: "NATIONAL-TOTAL",
+            provider_subset: subset,
+            provider_name: name,
+            practice_name: subtext,
+            npi: stateCode ? `STATE-${stateCode}` : "NATIONAL-TOTAL",
             rev_2026: totalRev2026,
             cf_dollar_cut: totalCfCut,
             total_ems: totalEms,
@@ -829,12 +843,6 @@
             return;
         }
 
-        const matches = providersData.filter(p => 
-            p.provider_name.toLowerCase().includes(query) || 
-            p.npi.includes(query) ||
-            p.practice_name.toLowerCase().includes(query)
-        ).slice(0, 8);
-
         let html = `
             <div class="search-item" onclick="selectAggregate()" style="border-bottom: 2px solid var(--primary-light); background: rgba(59, 130, 246, 0.12);">
                 <strong style="color: var(--primary-light);">🌐 All U.S. Dermatology Practices (National Aggregate)</strong>
@@ -842,11 +850,38 @@
             </div>
         `;
 
-        if (matches.length > 0) {
-            html += matches.map(p => `
+        // Smart Multi-Word Search Logic
+        // Splits the query into individual words (ignoring commas) so "martin, jen" works
+        const searchTerms = query.replace(/,/g, ' ').split(/\s+/).filter(t => t.length > 0);
+
+        // 1. Check for State Matches
+        const stateMatches = Object.entries(US_STATES).filter(([code, fullName]) => 
+            searchTerms.every(term => fullName.toLowerCase().includes(term) || code.toLowerCase() === term)
+        );
+
+        if (stateMatches.length > 0) {
+            stateMatches.forEach(([code, fullName]) => {
+                const count = providersData.filter(p => p.state === code).length;
+                html += `
+                    <div class="search-item" onclick="selectState('${code}')" style="background: rgba(234, 179, 8, 0.1); border-left: 4px solid var(--accent-yellow);">
+                        <strong style="color: var(--accent-yellow);">🏛️ ${fullName} (${code}) Dermatology Practices</strong>
+                        <br><small style="color: var(--text-muted)">State Aggregate (${count} Dermatology Providers in ${code})</small>
+                    </div>
+                `;
+            });
+        }
+
+        // 2. Individual Provider Matches (Must contain ALL typed words)
+        const providerMatches = providersData.filter(p => {
+            const searchableText = `${p.provider_name} ${p.practice_name} ${p.npi}`.toLowerCase();
+            return searchTerms.every(term => searchableText.includes(term));
+        }).slice(0, 8);
+
+        if (providerMatches.length > 0) {
+            html += providerMatches.map(p => `
                 <div class="search-item" onclick="selectProvider('${p.npi}')">
                     <strong>${p.provider_name}</strong> (${p.practice_name})
-                    <br><small style="color: var(--text-muted)">NPI: ${p.npi}</small>
+                    <br><small style="color: var(--text-muted)">NPI: ${p.npi} ${p.state ? '| State: ' + p.state : ''}</small>
                 </div>
             `).join('');
         }
@@ -861,6 +896,26 @@
             document.getElementById('search-results').style.display = 'none';
             document.getElementById('provider-search').value = '';
         }
+    }
+
+    function selectState(stateCode) {
+        const fullName = US_STATES[stateCode] || stateCode;
+        const subset = providersData.filter(p => p.state === stateCode);
+        
+        if (subset.length > 0) {
+            const stateProfile = createAggregateProfile(
+                subset, 
+                `${fullName} Dermatology Practices`, 
+                `Statewide Aggregate (${subset.length.toLocaleString()} Providers in ${stateCode})`,
+                stateCode
+            );
+            loadProviderProfile(stateProfile);
+        } else {
+            alert(`No providers found for state code: ${stateCode}`);
+        }
+
+        document.getElementById('search-results').style.display = 'none';
+        document.getElementById('provider-search').value = '';
     }
 
     function selectProvider(npi) {
@@ -928,7 +983,7 @@
         if (currentDoctor.isAggregate) {
             document.getElementById('percentile-badge').innerHTML = `
                 <span>Selected Usage Rate: <strong>${selectedPct.toFixed(1)}%</strong></span>
-                <span>| Peer Benchmarking: <strong>National Aggregate View</strong></span>
+                <span>| Peer Benchmarking: <strong>${currentDoctor.npi.startsWith('STATE-') ? 'State Aggregate View' : 'National Aggregate View'}</strong></span>
             `;
         } else {
             const currentPercentile = getPercentileFromRate(selectedPct);
@@ -947,8 +1002,8 @@
         const sliderRatio = selectedPct / 100.0;
 
         if (currentDoctor.isAggregate) {
-            // Precise sum across all dermatology providers
-            providersData.forEach(p => {
+            const subset = currentDoctor.provider_subset || providersData;
+            subset.forEach(p => {
                 totalRev2026 += p.rev_2026 || 0;
                 cfDollarCut += p.cf_dollar_cut || 0;
                 
@@ -1031,7 +1086,7 @@
 
         // Always sync common social card metadata
         document.getElementById('sc-doc-name').innerText = currentDoctor.provider_name;
-        document.getElementById('sc-doc-practice').innerText = currentDoctor.isAggregate ? currentDoctor.practice_name : currentDoctor.practice_name;
+        document.getElementById('sc-doc-practice').innerText = currentDoctor.practice_name;
         document.getElementById('sc-timeline-label').innerText = isFullyImplemented ? "Projected Loss (Fully Implemented)" : "Projected Loss (2027 Phase-In)";
     }
 
