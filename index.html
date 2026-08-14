@@ -318,6 +318,66 @@
             justify-content: space-between;
         }
 
+        .tooltip-container {
+            position: relative;
+            display: inline-block;
+            margin-left: 6px;
+        }
+
+        .tooltip-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            background: rgba(148, 163, 184, 0.2);
+            color: var(--text-muted);
+            border-radius: 50%;
+            font-size: 0.65rem;
+            font-weight: 700;
+            cursor: help;
+            transition: all 0.2s ease;
+        }
+
+        .tooltip-container:hover .tooltip-icon {
+            background: var(--accent-yellow);
+            color: var(--bg-dark);
+        }
+
+        .tooltip-text {
+            visibility: hidden;
+            width: 260px;
+            background-color: var(--card-bg-elevated);
+            color: var(--text-light);
+            text-align: left;
+            text-transform: none;
+            letter-spacing: normal;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.75rem;
+            line-height: 1.4;
+            position: absolute;
+            z-index: 10;
+            top: 125%;
+            right: 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-weight: 400;
+        }
+
+        .tooltip-container:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .tooltip-text strong {
+            color: var(--accent-yellow);
+            display: block;
+            margin-bottom: 4px;
+        }
+
         .cut-card-title span.badge {
             background: rgba(239, 68, 68, 0.15);
             color: var(--accent-red);
@@ -698,7 +758,15 @@
             <div class="cut-card-subtext" id="rvu-cut-pct">-0.00% of baseline</div>
         </div>
         <div class="cut-card accent-card">
-            <div class="cut-card-title">3. Modifier 25 Cut</div>
+            <div class="cut-card-title">
+                3. Modifier 25 Cut
+                <div class="tooltip-container">
+                    <span class="tooltip-icon">(?)</span>
+                    <div class="tooltip-text">
+                        <strong>Note for Surgical Practices:</strong> If Modifier 25 is billed alongside higher-valued procedures, the penalty caps at 50% of your average E/M value <span id="mod25-max-cap-text">(up to -$0 at this usage rate)</span>.
+                    </div>
+                </div>
+            </div>
             <div class="cut-card-value" id="mod25-cut-val">-$0</div>
             <div class="cut-card-subtext" id="mod25-cut-pct">-0.00% of baseline</div>
         </div>
@@ -1026,6 +1094,32 @@
             const penaltyPerEncounter = Math.min(avgEm, avgProc) * 0.50;
             const affectedVisits = currentDoctor.total_ems * sliderRatio;
             mod25Cut = -1 * (affectedVisits * penaltyPerEncounter);
+        }
+
+        // Calculate Maximum Potential Cut for Surgeons
+        let maxMod25Cut = 0;
+        if (currentDoctor.isAggregate) {
+            const subset = currentDoctor.provider_subset || providersData;
+            let totalMaxMod25Cut = 0;
+            subset.forEach(p => {
+                const avgEm = isFullyImplemented ? p.avg_em_val_full : p.avg_em_val;
+                const maxPenaltyPerEncounter = avgEm * 0.50;
+                const affectedVisits = (p.total_ems || 0) * sliderRatio;
+                totalMaxMod25Cut += -1 * (affectedVisits * maxPenaltyPerEncounter);
+            });
+            maxMod25Cut = totalMaxMod25Cut;
+        } else {
+            const avgEm = isFullyImplemented ? currentDoctor.avg_em_val_full : currentDoctor.avg_em_val;
+            const maxPenaltyPerEncounter = avgEm * 0.50;
+            const affectedVisits = currentDoctor.total_ems * sliderRatio;
+            maxMod25Cut = -1 * (affectedVisits * maxPenaltyPerEncounter);
+        }
+
+        if (isPercentOnly) {
+            const maxMod25PctOfBaseline = (maxMod25Cut / totalRev2026) * 100;
+            document.getElementById('mod25-max-cap-text').innerText = `(up to ${maxMod25PctOfBaseline.toFixed(2)}% of baseline at this usage rate)`;
+        } else {
+            document.getElementById('mod25-max-cap-text').innerText = `(up to ${formatCurrency(maxMod25Cut)} at this usage rate)`;
         }
 
         const cfPct = -1.68;
