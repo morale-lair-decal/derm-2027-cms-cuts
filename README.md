@@ -38,15 +38,15 @@ $$
 
 * **Inflation Scaling Ratio:**
 
-  $$
-  \text{CF Inflation Ratio} = \frac{33.4009}{33.11} \approx 1.00878
-  $$
+$$
+\text{CF Inflation Ratio} = \frac{33.4009}{33.11} \approx 1.00878
+$$
 
 * **Dynamic Conversion Factor Cut:**
 
-  $$
+$$
   \text{Dynamic CF Cut \%} = \frac{32.8409 - 33.4009}{33.4009} \approx -1.6766\%
-  $$
+$$
 
 ## Mathematical Sequence
 
@@ -82,19 +82,19 @@ $$
 
 1. Theoretical total unit shift:
 
-   $$
+$$
    \Delta \text{Unit}_{2027} = (\text{Total RVU}_{i, 2027} \times 32.8409) - (\text{Total RVU}_{i, 2026} \times 33.4009)
-   $$
+$$
 
 2. Pure RVU shift (isolating double-counted CF drop):
 
-   $$
+$$
    \text{Pure RVU Shift}_{2027} = \Delta \text{Unit}_{2027} - (\text{Total RVU}_{i, 2026} \times 33.4009 \times \text{Dynamic CF Cut Percentage})
-   $$
+$$
 
 3. Geography- and MPPR-adjusted dollar cut for CPT code $i$:
 
-   $$
+$$
    \text{RVU Cut}_{i, 2027} = \text{Services}_i \times \text{Pure RVU Shift}_{2027} \times RF_i
    $$
 
@@ -102,17 +102,17 @@ $$
 
 1. Uncapped Total RVU construction:
 
-   $$
+$$
    \text{Total RVU}_{i, \text{Full}} = \text{Work RVU}_{i, 2027} + \text{Fully Implemented PE RVU}_i + \text{Malpractice RVU}_{i, 2027}
    $$
 
 2. Fully implemented pure RVU shift and adjusted cut:
 
-   $$
+$$
    \text{Pure RVU Shift}_{\text{Full}} = [(\text{Total RVU}_{i, \text{Full}} \times 32.8409) - (\text{Total RVU}_{i, 2026} \times 33.4009)] - (\text{Total RVU}_{i, 2026} \times 33.4009 \times \text{Dynamic CF Cut Percentage})
    $$
 
-   $$
+$$
    \text{RVU Cut}_{i, \text{Full}} = \text{Services}_i \times \text{Pure RVU Shift}_{\text{Full}} \times RF_i
    $$
 
@@ -124,7 +124,7 @@ Predicts the specific physician's same-day E/M discounting based on their actual
 
 2. **Procedure Ratio:**
 
-   $$
+$$
    \text{Raw Proc Ratio} = \frac{\text{Total Candidate Procedures}}{\text{Total E/M Visits}}
    $$
 
@@ -132,17 +132,17 @@ Predicts the specific physician's same-day E/M discounting based on their actual
 
    * $25^{\text{th}}$ **Percentile (Low Procedural):** Maps to $\sim 15\% - 45\%$ usage rate.
    * $50^{\text{th}}$ **Percentile (Median Anchor):** Maps to $\sim 60\%$ usage rate.
-   * $75^{\text{th}}+$ **Percentile (High Procedural):** Maps to $\sim 82\% - 92\%$ usage rate.
+   * $75^{\text{th}}$ **Percentile (High Procedural):** Maps to $\sim 82\% - 92\%$ usage rate.
 
 4. **Encounter Penalty:**
 
-   $$
+$$
    \text{Penalty per Encounter} = 0.50 \times \min(\text{Avg Realized E/M Value}, \text{Avg Realized Procedure Value})
    $$
 
 5. **Total Modifier 25 Cut:**
 
-   $$
+$$
    \text{Modifier 25 Cut} = -1 \times (\text{Total E/M Services} \times \text{Estimated Mod 25 Usage Rate} \times \text{Penalty per Encounter})
    $$
 
