@@ -66,9 +66,11 @@ $$\mathbb{E}[\text{Penalty}_{\text{Tier A}}] = \sum_{e} \sum_{k} \left( p_e \cdo
 Where $p_e = \frac{V_e}{\sum V_e}$ is the practice's E/M level volume distribution.
 
 #### Step 3: Tier B Residual Pool Fallback (10% of Encounters)
-For the remaining 10% of encounters involving complex procedures (excisions, repairs, flaps, grafts, Mohs), procedural allowed amounts universally exceed E/M allowed amounts ($\text{Allowed}_{\text{Proc}} > \text{Allowed}_{\text{E/M}}$). The minimum operator naturally defaults to the E/M rate:
+For the remaining 10% of encounters involving complex procedures (excisions, repairs, flaps, grafts, Mohs), procedural allowed amounts universally exceed E/M allowed amounts ($\text{Allowed}$<sub>Proc</sub> > $\text{Allowed}$<sub>E/M</sub>). The minimum operator naturally defaults to the E/M rate:
 
-$$\mathbb{E}[\text{Penalty}_{\text{Tier B}}] = \sum_{e} \left( p_e \cdot 0.50 \times \text{Allowed}_{\text{E/M}, e} \right)$$
+$$
+\mathbb{E}[\text{Penalty}(\text{Tier B})] = \sum_{e} \left( p_e \cdot 0.50 \times \text{Allowed}_{\text{E/M},\, e} \right)
+$$
 
 #### Step 4: Total Macro Aggregation
 $$\text{Total Macro Cut} = \left( 0.90 \cdot \mathbb{E}[\text{Penalty}_{\text{Tier A}}] + 0.10 \cdot \mathbb{E}[\text{Penalty}_{\text{Tier B}}] \right) \times \left( N_{\text{E/M}} \cdot \text{Rate}_{\text{Mod25}} \right)$$
