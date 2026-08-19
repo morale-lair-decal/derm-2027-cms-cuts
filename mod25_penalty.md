@@ -1,92 +1,125 @@
 # Methodology Comparison: Modifier 25 Penalty Estimation in Dermatology
 
-This document details the transition from the legacy **Naive Aggregate Benchmark Method** to the **Two-Tier $\alpha_k$-Weighted Pair-Wise Matrix** for modeling the macro-financial impact of proposed CMS Modifier 25 payment reductions on office-based Dermatology.
+This document details the evolution of our financial modeling framework for assessing the impact of proposed CMS Modifier 25 payment reductions on office-based Dermatology. It tracks the progression across three model iterations: the **Legacy Naive Aggregate Method**, the **Static Two-Tier Matrix Method**, and our current production standard—the **Dynamic Pairwise Matrix Method with Provider-Specific $\omega_i$ Weighting**.
 
 ---
 
 ## Executive Summary
 
-When modeling proposed policy changes where Modifier 25 encounters are subject to a 50% reduction on either the E/M or the primary procedural code (whichever is smaller), conventional aggregate modeling underestimates or distorts practice-level exposure. 
+When modeling proposed policy changes where Modifier 25 encounters are subject to a 50% reduction on either the E/M or the primary procedural code (whichever is smaller), conventional aggregate modeling underestimates or distorts practice-level exposure.
 
-The **New Method** resolves two fundamental mathematical flaws in legacy modeling:
-1. **Jensen's Inequality (Aggregation Bias):** Non-linear operators like $\min(x, y)$ cannot be evaluated on macro averages ($\min(\bar{x}, \bar{y}) \neq \mathbb{E}[\min(x, y)]$).
-2. **Multiple Procedure Payment Reduction (MPPR) Dilution:** Raw procedural service counts ($V_k$) include secondary add-on codes already discounted under 50% MPPR, artificially depressing the procedural benchmark rate.
+* **Jensen's Inequality (Aggregation Bias):** Non-linear operators like $\min(x, y)$ cannot be evaluated on macro averages ($\min(\bar{x}, \bar{y}) \neq \mathbb{E}[\min(x, y)]$).
+* **Multiple Procedure Payment Reduction (MPPR) Dilution:** Raw procedural service counts ($V_k$) include secondary add-on codes already discounted under 50% MPPR, artificially depressing procedural benchmark rates.
+* **Static Attachment Distortion:** Universal 90/10 Tier splits fail to account for procedural specialization (e.g., Mohs/reconstructive surgeons vs. medical dermatologists).
 
----
-
-## Methodological Comparison
-
-| Feature / Dimension | Legacy Old Method | New Two-Tier Matrix Method |
-| :--- | :--- | :--- |
-| **Primary Formula** | $0.50 \times \min(\overline{\text{E/M}}, \overline{\text{Proc}}) \times N_\text{Mod25}$ | $(0.90 \cdot \mathbb{E}[\text{Penalty}(\text{Tier A})] + 0.10 \cdot \mathbb{E}[\text{Penalty}(\text{Tier B})]) \times N_\text{Mod25}$ |
-| **Evaluation Level** | Practice-wide aggregate averages | Discrete E/M level ($e$) $\times$ Procedure ($k$) pair matrix |
-| **Procedural Weighting** | Raw line service volume ($V_k$) | Effective primary volume ($\widetilde{V}_k = V_k \cdot \alpha_k$) |
-| **MPPR Filtering** | None (includes subordinate add-on codes) | Excludes secondary occurrences via primary probability factor $\alpha_k$ |
-| **Long-Tail Handling** | Ignored or pooled together | Separated into Tier B (excisions, flaps, grafts) where $\text{Proc} > \text{E/M}$ |
-| **Mathematical Accuracy** | Subject to Jensen's Inequality bias | Exact non-linear joint probability expectation |
+The **Dynamic Pairwise Matrix (Model 3)** resolves all three limitations, making it our most accurate model.
 
 ---
 
-## Mathematical Formulation
+## Methodological Comparison Matrix
 
-### 1. Legacy Old Method (Naive Aggregate)
-
-The legacy method calculates a single practice-level or specialty-level volume-weighted average allowed amount for E/M visits ($\overline{\text{E/M}}$) and candidate procedures ($\overline{\text{Proc}}$):
-
-$$\overline{\text{E/M}} = \frac{\sum_{e} V_e \cdot \text{Allowed}_e}{\sum_{e} V_e}, \quad \overline{\text{Proc}} = \frac{\sum_{k} V_k \cdot \text{Allowed}_k}{\sum_{k} V_k}$$
-
-$$\text{Total Penalty}_{\text{Old}} = 0.50 \times \min\left(\overline{\text{E/M}},\, \overline{\text{Proc}}\right) \times N_{\text{Mod25}}$$
-
-#### Key Flaws:
-* **The MPPR Dilution Trap:** In dermatology, high-volume secondary add-on procedures (e.g., CPT `17000` AK destruction, CPT `11300` small shave) drive up total $V_k$. Including them in $\overline{\text{Proc}}$ pulls the average procedural benchmark far below the true primary procedure rate (e.g., CPT `11102` biopsy or `17004` destruction).
-* **Capping Distortion:** If $\overline{\text{Proc}} > \overline{\text{E/M}}$, the model assumes the E/M is *always* the smaller code across 100% of encounters, ignoring instances where a high-level E/M (CPT `99214` @ ~$127) is paired with a smaller primary procedure (CPT `11102` @ ~$75).
+| Feature / Dimension | Model 1: Legacy Naive Aggregate | Model 2: Static Two-Tier Matrix | Model 3: Dynamic Pairwise Matrix |
+| :--- | :--- | :--- | :--- |
+| **Primary Formula** | $0.50 \times \min(\overline{\text{E/M}}, \overline{\text{Proc}}) \times N_\text{Mod25}$ | $(0.90 \cdot \mathbb{E}[\text{Penalty}(\text{A})] + 0.10 \cdot \mathbb{E}[\text{Penalty}(\text{B})]) \times N_\text{Mod25}$ | $(\omega_{i,\mathrm{A}} \cdot \mathbb{E}[\text{Penalty}(\text{A})] + \omega_{i,\mathrm{B}} \cdot \mathbb{E}[\text{Penalty}(\text{B})]) \times N_\text{Mod25}$ |
+| **Evaluation Level** | Practice-wide aggregate averages | Discrete $E_e \times P_k$ matrix | Discrete $E_e \times P_k$ matrix |
+| **Procedural Weighting** | Raw line service volume ($V_k$) | Effective primary volume ($\widetilde{V}_k = V_k \cdot \alpha_k$) | Effective primary volume ($\widetilde{V}_k = V_k \cdot \alpha_k$) |
+| **MPPR & ZZZ Filtering** | None | Primary probability factor $\alpha_k$ | Excludes ZZZ add-ons + applies $\alpha_k$ weights |
+| **Tier A / B Split** | None (Single pooled average) | Static national assumption ($90\% / 10\%$) | Dynamic per-provider split ($\omega_{i,\mathrm{A}} / \omega_{i,\mathrm{B}}$) |
+| **Practice Customization** | Uniform baseline rate | Uniform attachment probability | Custom-tailored to NPI billing profile |
 
 ---
 
-### 2. New Method (Two-Tier $\alpha_k$-Weighted Pair-Wise Matrix)
+## Model Breakdown
 
-#### Step 1: Isolate Primary Procedure Weighting ($\alpha_k$)
-Using 2024 Medicare PUF realization data, each candidate procedure $k$ is assigned a primary probability factor $\alpha_k$, calculated as:
+### Model 1: Legacy Naive Aggregate Benchmark
 
-$$\alpha_k = \text{CLAMP}\left(2 \cdot \text{RF}_{\text{Pure}} - 1.0, \, 0.0, \, 1.0\right)$$
+The legacy method calculates a single practice-level volume-weighted average allowed amount for E/M visits ($\overline{\text{E/M}}$) and candidate procedures ($\overline{\text{Proc}}$):
 
-Where $\text{RF}_{\text{Pure}}$ is the ratio of actual allowed revenue to locality-adjusted unreduced baseline revenue. 
-* $\alpha_k \to 1.0$: Procedure is almost always the benchmark primary service on a claim (e.g., CPT `17004` = $0.9671$).
-* $\alpha_k \to 0.0$: Procedure is typically secondary and already subject to 50% MPPR (e.g., CPT `11300` = $0.4076$).
+$$
+\overline{\text{E/M}} = \frac{\sum_{e} V_e \cdot \text{Allowed}_e}{\sum_{e} V_e}, \quad \overline{\text{Proc}} = \frac{\sum_{k} V_k \cdot \text{Allowed}_k}{\sum_{k} V_k}
+$$
 
-Effective candidate procedural volume is then defined as:
+$$
+\text{Total Penalty}_\text{Legacy} = 0.50 \times \min\left(\overline{\text{E/M}},\, \overline{\text{Proc}}\right) \times N_\text{Mod25}
+$$
 
-$$\widetilde{V}_k = V_k \times \alpha_k, \quad \widetilde{w}_k = \frac{\widetilde{V}_k}{\sum_{j \in \text{Candidates}} \widetilde{V}_j}$$
+#### Why it Fails
+* **MPPR Dilution Trap:** High-volume secondary add-on codes (e.g., CPT 17000 AK destruction) drive up total volume $V_k$, artificially dragging $\overline{\text{Proc}}$ far below true primary procedure rates (e.g., CPT 11102 biopsy or CPT 17004).
+* **Capping Distortion:** If $\overline{\text{Proc}} > \overline{\text{E/M}}$, it assumes the E/M is always the smaller code across 100% of encounters, ignoring instances where a level 4 E/M (`99214` at ~\$127) pairs with a simple biopsy (`11102` at ~\$75).
 
-#### Step 2: Tier A Candidate Pool Expectation (90% of Encounters)
-For the 90% of Modifier 25 encounters involving common minor procedures (`MOD25_PRIMARY_PROCEDURE`), we compute the expected cut over all discrete pairs of E/M level $e$ and primary procedure $k$:
+---
 
-$$\mathbb{E}[\text{Penalty}_{\text{Tier A}}] = \sum_{e} \sum_{k} \left( p_e \cdot \widetilde{w}_k \cdot 0.50 \times \min\left(\text{Allowed}_{\text{E/M}, e},\, \text{Allowed}_{\text{Proc}, k}\right) \right)$$
+### Model 2: Static Two-Tier Matrix Method
 
-Where $p_e = \frac{V_e}{\sum V_e}$ is the practice's E/M level volume distribution.
+Model 2 introduced discrete pairwise matrix calculations for Tier A candidate procedures weighted by a primary probability factor $\alpha_k$, assuming a fixed global 90% Tier A / 10% Tier B split across all practices:
 
-#### Step 3: Tier B Residual Pool Fallback (10% of Encounters)
-For the remaining 10% of encounters involving complex procedures (excisions, repairs, flaps, grafts, Mohs), procedural allowed amounts universally exceed E/M allowed amounts ($\text{Allowed}$<sub>Proc</sub> > $\text{Allowed}$<sub>E/M</sub>). The minimum operator naturally defaults to the E/M rate:
+$$
+\mathbb{E}[\text{Penalty}(\text{Tier A})] = \sum_{e} \sum_{k} \left( p_e \cdot \widetilde{w}_k \cdot 0.50 \times \min\left(\text{Allowed}_{\text{E/M},\, e},\, \text{Allowed}_{\text{Proc},\, k}\right) \right)
+$$
 
 $$
 \mathbb{E}[\text{Penalty}(\text{Tier B})] = \sum_{e} \left( p_e \cdot 0.50 \times \text{Allowed}_{\text{E/M},\, e} \right)
 $$
 
-#### Step 4: Total Macro Aggregation
-$$\text{Total Macro Cut} = \left( 0.90 \cdot \mathbb{E}[\text{Penalty}_{\text{Tier A}}] + 0.10 \cdot \mathbb{E}[\text{Penalty}_{\text{Tier B}}] \right) \times \left( N_{\text{E/M}} \cdot \text{Rate}_{\text{Mod25}} \right)$$
+$$
+\text{Total Penalty}_\text{Static} = \left( 0.90 \cdot \mathbb{E}[\text{Penalty}(\text{Tier A})] + 0.10 \cdot \mathbb{E}[\text{Penalty}(\text{Tier B})] \right) \times N_\text{Mod25}
+$$
+
+#### Improvements over Model 1
+* **Solves Jensen's Inequality:** Evaluates the non-linear $\min(E_e, P_k)$ operator at the individual encounter pair level before averaging.
+* **Filters Secondary Noise ($\alpha_k$):** Weights procedural volume by $\alpha_k$ (the probability that a CPT code acts as the benchmark primary procedure rather than a secondary 50% MPPR code).
+
+#### Remaining Flaw
+* **Static 90/10 Assumption:** Forcing a static 90% Tier A / 10% Tier B ratio on every practice distorts reality. A Mohs reconstructive surgeon has a vastly higher proportion of Tier B procedures than a general medical dermatologist.
 
 ---
 
-## Why Results Diverge at the Practice Level
+### Model 3: Dynamic Pairwise Matrix (Newest & Most Accurate)
 
-Running the comparative SQL model across sample dermatology practices demonstrates both **positive** and **negative** directional shifts relative to legacy estimates:
+Model 3 replaces the macro 90/10 assumption with an individual, NPI-specific attachment weight ($\omega_{i,\text{Tier A}}$ and $\omega_{i,\text{Tier B}}$) computed directly from each provider's historical billing mix.
 
-### Case A: Why Some Practices Suffer a SMALLER Cut Under the New Method
-* **Mechanism:** Practices with complex medical dermatology bill high-level visits (CPT `99214` at ~\$127) alongside simple biopsies (CPT `11102` at ~\$75).
-* **Legacy Distortion:** The Old Method set the cut across all visits as $0.50 \times \overline{\text{E/M}} = \textdollar 63.50$.
-* **New Method Correction:** The pair-wise matrix evaluates each specific encounter pair: $\min(\textdollar 127, \textdollar 75) = \textdollar 75 \implies \text{Cut} = \textdollar 37.50$. The legacy model severely overstated revenue loss for these encounters.
+#### Step 1: Primary Probability Factor ($\alpha_k$) & Effective Weights
+Using Medicare PUF realization data, each procedure $k$ is weighted by its primary probability factor $\alpha_k$:
 
-### Case B: Why Some Practices Suffer a LARGER Cut Under the New Method
-* **Mechanism:** High-volume procedural practices bill thousands of secondary destruction or shave units.
-* **Legacy Distortion:** Raw service volume ($V_k$) allowed secondary codes to artificially drag down $\overline{\text{Proc}}$, suppressing the benchmark rate.
-* **New Method Correction:** Weighting by $\alpha_k$ filters out secondary MPPR noise, elevating the true procedural benchmark to primary rates (`17004`, `11104`, `17110`) and capturing Tier B long-tail procedures.
+$$
+\alpha_k = \mathrm{CLAMP}\left(2 \cdot \text{RF}_\text{Pure} - 1.0, \, 0.0, \, 1.0\right)
+$$
+
+$$
+\widetilde{V}_k = V_k \cdot \alpha_k, \quad \widetilde{w}_k = \frac{\widetilde{V}_k}{\sum_j \widetilde{V}_j}
+$$
+
+#### Step 2: Provider-Specific Dynamic Attachment Ranking ($\omega_i$)
+To determine a provider's unique propensity to attach Modifier 25 to Tier A vs. Tier B procedures, we filter out all ZZZ global add-on codes and measure their relative procedural mix:
+
+$$
+V_{i, \text{Tier A}} = \sum_{k \in \text{Tier A}} V_{i,k}, \quad V_{i, \text{Tier B}} = \sum_{j \in \text{Tier B, Non-ZZZ}} V_{i,j}
+$$
+
+Using baseline attachment propensities $M_A = 0.90$ and $M_B = 0.10$, we calculate provider $i$'s dynamic Tier A weight ($\omega_{i,\text{Tier A}}$):
+
+$$
+\omega_{i, \text{Tier A}} = \frac{V_{i, \text{Tier A}} \cdot 0.90}{(V_{i, \text{Tier A}} \cdot 0.90) + (V_{i, \text{Tier B}} \cdot 0.10)}
+$$
+
+$$
+\omega_{i, \text{Tier B}} = 1.0 - \omega_{i, \text{Tier A}}
+$$
+
+#### Step 3: Provider-Specific Expected Penalty
+
+$$
+\text{Cut}_{i, \text{Per Encounter}} = \left( \omega_{i, \text{Tier A}} \cdot \mathbb{E}[\text{Penalty}_{i, \text{Tier A}}] \right) + \left( \omega_{i, \text{Tier B}} \cdot \mathbb{E}[\text{Penalty}_{i, \text{Tier B}}] \right)
+$$
+
+$$
+\text{Total Penalty}_\text{Dynamic} = \text{Cut}_{i, \text{Per Encounter}} \times N_{i, \text{EM}} \times \text{Rate}_{i, \text{Mod25}}
+$$
+
+---
+
+### Why Model 3 is the Most Accurate
+
+* **Eliminates Macro Bias:** Rather than applying national averages, Model 3 adapts dynamically to whether an NPI is a high-volume biopsy practice ($\omega_{i,\mathrm{A}} \to 98\%$) or a surgical Mohs/excision practice ($\omega_{i,\mathrm{B}} \uparrow$).
+* **Corrects Capping Distortion:** Accurately models exact pairing losses across high-level visits (`99214`/`99215`) paired with lower-cost primary procedures (`11102`/`17000`).
+* **Pure Primary Isolation:** Filters out secondary MPPR units ($\alpha_k$) and ZZZ add-ons, ensuring that secondary lines do not falsely dilute exposure estimates.
