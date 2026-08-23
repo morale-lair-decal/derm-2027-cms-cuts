@@ -692,19 +692,6 @@
         </div>
     </header>
 
-    <div class="specialty-selector-wrapper" style="margin-bottom: 15px;">
-      <label for="specialtySelect" style="font-weight: bold; margin-right: 8px;">Select Specialty:</label>
-      <select id="specialtySelect" onchange="handleSpecialtyChange(this.value)" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
-        <option value="data/provider_data.json" selected>Dermatology</option>
-        <option value="data/orthopedics.json">Orthopedic Surgery</option>
-        <option value="data/ent.json">Otolaryngology (ENT)</option>
-        <option value="data/ophthalmology.json">Ophthalmology</option>
-        <option value="data/plastic_surgery.json">Plastic Surgery</option>
-        <option value="data/hand_surgery.json">Hand Surgery</option>
-        <option value="data/colorectal.json">Colorectal Surgery</option>
-      </select>
-    </div>
-
     <div class="doctor-card">
         <div class="doc-details">
             <h2 id="doc-name">All U.S. Dermatology Practices</h2>
@@ -880,61 +867,26 @@
     let providersData = [];
     let currentDoctor = null;
     let aggregateProfile = null;
-    let currentSpecialtyData = [];
-    let currentSpecialtyLabel = 'Dermatology';
-
-    function getCurrentSpecialtyLabel() {
-        return currentSpecialtyLabel || 'Dermatology';
-    }
 
     function initSearchIndex(dataset) {
         providersData = Array.isArray(dataset) ? dataset : [];
     }
 
-    function handleSpecialtyChange(jsonPath) {
-        // Hide old advocacy banner if still present in DOM
-        const banner = document.getElementById('advocacyBanner');
-        if (banner) {
-            banner.style.display = 'none';
-        }
-
-        loadSpecialtyData(jsonPath);
-    }
-
-    function loadSpecialtyData(jsonPath) {
-        // Map dropdown paths to human-readable labels
-        const specialtyLabels = {
-            'data/provider_data.json': 'Dermatology',
-            'data/orthopedics.json': 'Orthopedic Surgery',
-            'data/ent.json': 'Otolaryngology (ENT)',
-            'data/ophthalmology.json': 'Ophthalmology',
-            'data/plastic_surgery.json': 'Plastic Surgery',
-            'data/hand_surgery.json': 'Hand Surgery',
-            'data/colorectal.json': 'Colorectal Surgery'
-        };
-
-        currentSpecialtyLabel = specialtyLabels[jsonPath] || 'Dermatology';
-
-        fetch(jsonPath)
+    function loadData() {
+        fetch('data/provider_data.json')
             .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Failed to load ${jsonPath}`);
-                }
+                if (!response.ok) throw new Error('Failed to load data/provider_data.json');
                 return response.json();
             })
             .then(data => {
-                currentSpecialtyData = data;
                 providersData = data;
-
-                if (typeof initSearchIndex === 'function') {
-                    initSearchIndex(currentSpecialtyData);
-                }
+                initSearchIndex(providersData);
 
                 if (providersData.length > 0) {
                     aggregateProfile = createAggregateProfile(
                         providersData,
-                        `All U.S. ${currentSpecialtyLabel} Practices`,
-                        `National Total (${data.length.toLocaleString()} ${currentSpecialtyLabel} Providers)`
+                        'All U.S. Dermatology Practices',
+                        `National Total (${data.length.toLocaleString()} Dermatology Providers)`
                     );
 
                     const mod25Slider = document.getElementById('mod25-slider');
@@ -945,11 +897,11 @@
                     loadProviderProfile(aggregateProfile);
                 }
             })
-            .catch(err => console.error('Error changing specialty dataset:', err));
+            .catch(err => console.error('Error loading Dermatology dataset:', err));
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        loadSpecialtyData('data/provider_data.json');
+        loadData();
     });
 
     function createAggregateProfile(subset, name, subtext, stateCode = null) {
@@ -978,7 +930,6 @@
     function filterProviders() {
         const query = document.getElementById('provider-search').value.toLowerCase().trim();
         const resultsContainer = document.getElementById('search-results');
-        const specialtyLabel = getCurrentSpecialtyLabel();
         
         if (query.length < 2) {
             resultsContainer.style.display = 'none';
@@ -987,7 +938,7 @@
 
         let html = `
             <div class="search-item" onclick="selectAggregate()" style="border-bottom: 2px solid var(--primary-light); background: rgba(59, 130, 246, 0.12);">
-                <strong style="color: var(--primary-light);">🌐 All U.S. ${specialtyLabel} Practices (National Aggregate)</strong>
+                <strong style="color: var(--primary-light);">🌐 All U.S. Dermatology Practices (National Aggregate)</strong>
                 <br><small style="color: var(--text-light)">View total national Medicare allowable & aggregate cuts</small>
             </div>
         `;
@@ -1006,8 +957,8 @@
                 const count = providersData.filter(p => p.state === code).length;
                 html += `
                     <div class="search-item" onclick="selectState('${code}')" style="background: rgba(234, 179, 8, 0.1); border-left: 4px solid var(--accent-yellow);">
-                        <strong style="color: var(--accent-yellow);">🏛️ ${fullName} (${code}) ${specialtyLabel} Practices</strong>
-                        <br><small style="color: var(--text-muted)">State Aggregate (${count} ${specialtyLabel} Providers in ${code})</small>
+                        <strong style="color: var(--accent-yellow);">🏛️ ${fullName} (${code}) Dermatology Practices</strong>
+                        <br><small style="color: var(--text-muted)">State Aggregate (${count} Dermatology Providers in ${code})</small>
                     </div>
                 `;
             });
@@ -1043,12 +994,11 @@
     function selectState(stateCode) {
         const fullName = US_STATES[stateCode] || stateCode;
         const subset = providersData.filter(p => p.state === stateCode);
-        const specialtyLabel = getCurrentSpecialtyLabel();
         
         if (subset.length > 0) {
             const stateProfile = createAggregateProfile(
                 subset, 
-                `${fullName} ${specialtyLabel} Practices`, 
+                `${fullName} Dermatology Practices`, 
                 `Statewide Aggregate (${subset.length.toLocaleString()} Providers in ${stateCode})`,
                 stateCode
             );
@@ -1122,48 +1072,18 @@
         const selectedPct = parseFloat(document.getElementById('mod25-slider').value);
         document.getElementById('slider-pct-display').innerText = selectedPct.toFixed(1) + '%';
 
-        const isDerm = (getCurrentSpecialtyLabel() === 'Dermatology');
-
-        // 1. Update Peer Benchmarking Badge & Helper Text Dynamically
+        // 1. Peer Benchmarking Badge & Helper Text
         const badgeElem = document.getElementById('percentile-badge');
         const helperDescElem = document.getElementById('slider-helper-desc');
 
-        if (isDerm) {
-            // --- DERMATOLOGY MODE ---
-            if (currentDoctor.isAggregate) {
-                badgeElem.innerHTML = `
-                    <span>Selected Usage Rate: <strong>${selectedPct.toFixed(1)}%</strong></span>
-                    <span>| Peer Benchmarking: <strong>${currentDoctor.npi.startsWith('STATE-') ? 'State Aggregate View' : 'National Aggregate View'}</strong></span>
-                `;
-            } else {
-                const currentPercentile = getPercentileFromRate(selectedPct);
-                badgeElem.innerHTML = `
-                    <span>Selected Usage Rate: <strong>${selectedPct.toFixed(1)}%</strong></span>
-                    <span>| Peer Benchmarking: <strong>${currentPercentile}th Percentile Nationally</strong></span>
-                `;
-            }
+        const currentPercentile = getPercentileFromRate(selectedPct);
+        badgeElem.innerHTML = `
+            <span>Selected Usage Rate: <strong>${selectedPct.toFixed(1)}%</strong></span>
+            <span>| Peer Benchmarking: <strong>${currentPercentile}th Percentile Nationally</strong></span>
+        `;
 
-            if (helperDescElem) {
-                helperDescElem.innerText = "Pre-set to estimated same-day procedure rate based on billing volume. Drag the slider to reflect actual practice workflow.";
-            }
-
-        } else {
-            // --- NON-DERMATOLOGY SPECIALTIES ---
-            if (currentDoctor.isAggregate) {
-                badgeElem.innerHTML = `
-                    <span>Selected Usage Rate: <strong>${selectedPct.toFixed(1)}%</strong></span>
-                    <span>| Specialty: <strong>${currentDoctor.npi.startsWith('STATE-') ? 'State Aggregate View' : 'National Aggregate View'}</strong></span>
-                `;
-            } else {
-                // Remove Peer Benchmarking for individual non-Derm providers
-                badgeElem.innerHTML = `
-                    <span>Selected Usage Rate: <strong>${selectedPct.toFixed(1)}%</strong></span>
-                `;
-            }
-
-            if (helperDescElem) {
-                helperDescElem.innerText = "Pre-set to the national average utilization rate for this specialty based on CMS PSPS claims data. Drag the slider to reflect actual practice workflow.";
-            }
+        if (helperDescElem) {
+            helperDescElem.innerText = "Pre-set to estimated same-day procedure rate based on billing volume. Drag the slider to reflect actual practice workflow.";
         }
 
         // 1. Calculate Cut Totals (Aggregate or Individual Doctor)
@@ -1184,10 +1104,11 @@
                 rvuDollarCut += pRvuCut || 0;
 
                 const avgEm = isFullyImplemented ? p.avg_em_val_full : p.avg_em_val;
-                const avgProc = isFullyImplemented ? p.avg_proc_val_full : p.avg_proc_val;
                 
-                // For Dermatology: Compare E/M vs procedure. For non-Derm: Use full 50% E/M max cut.
-                const penaltyPerEncounter = isDerm ? Math.min(avgEm, avgProc) * 0.50 : avgEm * 0.50;
+                // Use pre-calculated dynamic pairwise matrix cut if available for Derm, fallback to 50% E/M for non-Derm
+                const penaltyPerEncounter = (p.mod25_cut_per_enc_2027 !== undefined)
+                    ? (isFullyImplemented ? p.mod25_cut_per_enc_full : p.mod25_cut_per_enc_2027)
+                    : avgEm * 0.50;
                 const affectedVisits = (p.total_ems || 0) * sliderRatio;
                 mod25Cut += -1 * (affectedVisits * penaltyPerEncounter);
             });
@@ -1197,8 +1118,11 @@
             rvuDollarCut = isFullyImplemented ? currentDoctor.rvu_dollar_cut_full : currentDoctor.rvu_dollar_cut;
 
             const avgEm = isFullyImplemented ? currentDoctor.avg_em_val_full : currentDoctor.avg_em_val;
-            const avgProc = isFullyImplemented ? currentDoctor.avg_proc_val_full : currentDoctor.avg_proc_val;
-            const penaltyPerEncounter = isDerm ? Math.min(avgEm, avgProc) * 0.50 : avgEm * 0.50;
+            
+            // Use pre-calculated dynamic pairwise matrix cut if available for Derm, fallback to 50% E/M for non-Derm
+            const penaltyPerEncounter = (currentDoctor.mod25_cut_per_enc_2027 !== undefined)
+                ? (isFullyImplemented ? currentDoctor.mod25_cut_per_enc_full : currentDoctor.mod25_cut_per_enc_2027)
+                : avgEm * 0.50;
             const affectedVisits = currentDoctor.total_ems * sliderRatio;
             mod25Cut = -1 * (affectedVisits * penaltyPerEncounter);
         }
@@ -1222,22 +1146,16 @@
             maxMod25Cut = -1 * (affectedVisits * maxPenaltyPerEncounter);
         }
 
-        // 3. Update Tooltip Content Dynamically Based on Active Specialty
+        // 3. Update Tooltip Content
         const tooltipElem = document.getElementById('mod25-tooltip-text');
         if (tooltipElem) {
-            if (isDerm) {
-                const maxCapStr = isPercentOnly 
-                    ? `(up to ${((maxMod25Cut / totalRev2026) * 100).toFixed(2)}% of baseline at this usage rate)`
-                    : `(up to ${formatCurrency(maxMod25Cut)} at this usage rate)`;
+            const maxCapStr = isPercentOnly 
+                ? `(up to ${((maxMod25Cut / totalRev2026) * 100).toFixed(2)}% of baseline at this usage rate)`
+                : `(up to ${formatCurrency(maxMod25Cut)} at this usage rate)`;
 
-                tooltipElem.innerHTML = `
+            tooltipElem.innerHTML = `
                 <strong>Note for Surgical Practices:</strong> If Modifier 25 is billed alongside higher-valued procedures, the penalty caps at 50% of your average E/M value <span id="mod25-max-cap-text">${maxCapStr}</span>.
             `;
-            } else {
-                tooltipElem.innerHTML = `
-                <strong>Notice:</strong> Figures display maximum potential exposure based on total E/M volume devalued at national CMS PSPS Modifier 25 utilization baselines.
-            `;
-            }
         }
 
         const cfPct = -1.68;
@@ -1301,10 +1219,9 @@
         document.getElementById('sc-doc-practice').innerText = currentDoctor.practice_name;
         document.getElementById('sc-timeline-label').innerText = isFullyImplemented ? "Projected Loss (Fully Implemented)" : "Projected Loss (2027 Phase-In)";
 
-        // Dynamic Hashtag Switcher based on Specialty
         const hashtagElem = document.getElementById('sc-hashtags');
         if (hashtagElem) {
-            hashtagElem.innerText = isDerm ? "#StopCMSCuts #SaveDermatology" : "#StopCMSCuts";
+            hashtagElem.innerText = "#StopCMSCuts #SaveDermatology";
         }
     }
 
