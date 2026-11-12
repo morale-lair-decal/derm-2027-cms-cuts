@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1120">
+  <meta name="description" content="2027 Medicare dermatology payment impact: final rule, fully implemented practice expense, and hypothetical future 000-day global-period scenarios. Explore national, state, or provider estimates.">
+  <title>Dermatology Medicare Cuts | CY 2027 Final Rule</title>
+  <link rel="stylesheet" href="assets/site.css?v=2027-v2-1">
+  <script src="assets/site.js?v=2027-v2-1" defer></script>
+</head>
+<body>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+  <div class="site-shell">
+    <header class="site-header">
+      <div class="brand"><span class="brand-symbol" aria-hidden="true">✳</span> <a href="./" aria-label="Return to national 2027 results">medicare-cuts<span class="brand-dot">.skin</span></a></div>
+      <div class="header-actions">
+        <span class="header-kicker"><span class="signal-dot"></span> CY 2027 FINAL RULE MODEL</span>
+        <a class="top-link" href="#methodology">Methodology <span aria-hidden="true">↗</span></a>
+      </div>
+    </header>
+
+    <main>
+      <section class="introduction">
+        <p class="eyebrow"><span class="eyebrow-line"></span> DATA-DRIVEN DERMATOLOGY ADVOCACY</p>
+        <h1>The Medicare cuts,<br><span>by the numbers.</span></h1>
+        <p class="intro-summary">Estimate the financial impact of the CY 2027 Medicare Physician Fee Schedule on an individual dermatologist, a state, or all U.S. dermatology providers. Explore the finalized rule and clearly labeled hypothetical scenarios.</p>
+        <div class="intro-stats"><span><strong>12,477</strong> dermatologists</span><span class="stat-divider"></span><span><strong>2024</strong> utilization baseline</span><span class="stat-divider"></span><span><strong>6</strong> modeled scenarios</span></div>
+      </section>
+
+      <section class="search-section" aria-label="Find provider or geographic results">
+        <div class="search-controls">
+          <label class="visually-hidden" for="provider-search">Search for a dermatologist, NPI, state, or national totals</label>
+          <span class="search-icon" aria-hidden="true">⌕</span>
+          <input type="search" id="provider-search" placeholder="Search doctor, NPI, state (MD / Maryland), or national" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="search-results" aria-expanded="false">
+          <button type="button" id="national-reset" class="national-button">National totals</button>
+        </div>
+        <div id="search-results" class="search-results" role="listbox" aria-label="Search suggestions" hidden></div>
+        <div class="search-footer"><span id="search-status">Loading provider directory…</span><span>Search all 50 states + DC</span></div>
+      </section>
+
+      <section class="scenario-section" aria-label="Select Medicare payment scenario">
+        <div class="section-heading"><div><span class="section-number">01 /</span> <h2>Choose your scenario</h2></div><span class="section-note">Modeled payment changes vs. 2026</span></div>
+        <div class="scenario-tabs" role="group" aria-label="Scenario type">
+          <button type="button" class="scenario-tab active" data-mode="phased" aria-pressed="true"><span class="tab-kicker">FINALIZED 2027</span><span class="tab-title">2027 phase-in</span><span class="tab-desc">Actual scheduled PE phase-in and Modifier 25 policy</span></button>
+          <button type="button" class="scenario-tab" data-mode="full" aria-pressed="false"><span class="tab-kicker">HYPOTHETICAL</span><span class="tab-title">Fully implemented PE</span><span class="tab-desc">Unstabilized PE changes; existing global periods</span></button>
+          <button type="button" class="scenario-tab" data-mode="future" aria-pressed="false"><span class="tab-kicker">HYPOTHETICAL FUTURE</span><span class="tab-title">000-day conversion</span><span class="tab-desc">Full PE + revalued dermatology destruction codes</span></button>
+        </div>
+        <div id="future-panel" class="future-panel" hidden>
+          <div class="future-intro"><div><strong>Additional RVU valuation assumption</strong><p>Percentage of a 99212 fee removed from each converted base code. All four codes change together.</p></div><span class="future-label">NOT PART OF THE 2027 FINAL RULE</span></div>
+          <div class="future-buttons" role="group" aria-label="Percent of 99212 valuation removed">
+            <button type="button" class="future-option" data-rate="0" aria-pressed="false">0%<small>M25 only</small></button>
+            <button type="button" class="future-option" data-rate="20" aria-pressed="false">20%<small>Minimum</small></button>
+            <button type="button" class="future-option active" data-rate="50" aria-pressed="true">50%<small>Midpoint</small></button>
+            <button type="button" class="future-option" data-rate="80" aria-pressed="false">80%<small>Upper stress test</small></button>
+          </div>
+          <p class="future-footnote">Converted to 000: <strong>17000, 17004, 17110, 17111</strong>. Add-on code <strong>17003 remains ZZZ</strong> and receives no direct modeled RVU reduction. Global-period conversion is a hypothetical future policy, not a 2027 rule change.</p>
+        </div>
+      </section>
+
+      <section class="results-section" id="results-section" aria-label="Financial impact results">
+        <div class="section-heading result-heading"><div><span class="section-number">02 /</span> <h2>Financial impact</h2></div><div class="display-control" role="group" aria-label="Display amounts in dollars or percentages"><button id="show-dollars" type="button" class="active" aria-pressed="true">$ Dollars</button><button id="show-percent" type="button" aria-pressed="false">% Percent</button></div></div>
+        <div id="status-message" class="status-message" role="status" aria-live="polite" hidden></div>
+        <div class="identity-card">
+          <div class="identity-left"><span id="profile-type" class="eyebrow-card">NATIONAL AGGREGATE</span><h3 id="profile-name">All U.S. Dermatology Practices</h3><p id="profile-subtitle">All modeled dermatology providers nationwide</p><p id="provider-count" class="provider-count">12,477 providers</p></div>
+          <div class="baseline-box"><span>2026 MODELED MEDICARE BASELINE</span><strong id="baseline-amount">Loading…</strong><small>Projected annual allowable, static utilization</small></div>
+        </div>
+        <div class="hero-impact">
+          <div class="hero-left"><span class="hero-label">TOTAL NET PAYMENT CHANGE</span><strong id="total-impact-value" class="hero-dollars">Loading…</strong><span id="scenario-plain-label" class="hero-context">CY 2027 final rule · phased PE</span></div>
+          <div class="hero-right"><div class="percentage-ring"><strong id="total-impact-percent">—</strong><small>of 2026 baseline</small></div><div class="projected-revenue">Modeled post-change revenue <strong id="projected-revenue">—</strong></div></div>
+        </div>
+        <div class="components">
+          <article class="component-card"><span class="component-index">01 / CONVERSION FACTOR</span><strong id="cf-impact">—</strong><p id="cf-share">— of baseline</p></article>
+          <article class="component-card"><span class="component-index">02 / RVU REWEIGHTING</span><strong id="rvu-impact">—</strong><p id="rvu-share">— of baseline</p></article>
+          <article class="component-card mod25-card"><span class="component-index">03 / MODIFIER 25</span><strong id="m25-impact">—</strong><p id="m25-share">— of baseline</p></article>
+          <article class="component-card" id="mppr-component" hidden><span class="component-index">04 / ESTIMATED MPPR CREDIT</span><strong id="mppr-impact">—</strong><p id="mppr-share">Provisional ordinary-MPPR ranking adjustment</p></article>
+        </div>
+        <div id="mppr-disclosure" class="mppr-disclosure" hidden><span>MPPR SENSITIVITY</span><div>Without the provisional reranking credit, the modeled change would be <strong id="no-mppr-value">—</strong> <span id="no-mppr-percent">—</span>.</div></div>
+      </section>
+
+      <section class="details-grid">
+        <div class="slider-card"><div class="slider-heading"><div><span class="section-number">03 /</span><h2>Customize Modifier 25</h2></div><button type="button" id="reset-slider" class="reset-link" disabled>Reset estimate ↺</button></div>
+          <p class="slider-explanation">Know your same-day E/M + procedure rate? Adjust it to see an instant estimate using the selected scenario's modeled procedure mix and payment assumptions.</p>
+          <div class="slider-topline"><label for="mod25-slider">Same-day E/M encounter rate</label><output id="slider-value" for="mod25-slider">—</output></div>
+          <input type="range" id="mod25-slider" min="0" max="100" step="0.1" value="61.5" disabled>
+          <div class="slider-ticks" aria-hidden="true"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+          <p class="slider-default">Model default for this selection: <strong id="slider-default-value">—</strong></p>
+          <p id="slider-note" class="slider-note">The model value is displayed until you move the slider. This adjusts only Modifier 25; CF, RVU, and MPPR components remain fixed.</p>
+        </div>
+        <div class="comparisons-card"><div class="comparison-title"><span class="section-number">04 /</span><h2>National comparison</h2></div><p>Explore the modeled national reduction under each scenario. Select a bar to switch assumptions.</p><div id="scenario-comparison" class="scenario-comparison" aria-label="National payment cuts across six scenarios"><div class="chart-loading">Loading national model results…</div></div><p class="comparison-caveat">The lower four bars are hypothetical future 000-day conversions with fully implemented PE; they are not finalized CMS policy.</p></div>
+      </section>
+
+      <section id="state-directory" class="state-directory" hidden><div class="section-heading"><div><span class="section-number">05 /</span><h2>Physicians in this state</h2></div><span id="state-list-count" class="section-note"></span></div><div id="state-list" class="state-list"></div><button type="button" id="state-more" class="secondary-button" hidden>Show more physicians</button></section>
+
+      <section class="share-section"><div><span class="section-number">SHARE THE IMPACT</span><h2>Make the numbers visible.</h2><p>Create a shareable 1080 × 1080 graphic for the selected provider, state, or national estimate, including the scenario and selected Modifier 25 rate.</p></div><button type="button" id="share-button" class="share-button">Copy / download graphic <span aria-hidden="true">↗</span></button></section>
+
+      <section class="methodology" id="methodology"><div class="section-heading"><div><span class="section-number">MODEL NOTES /</span><h2>What these estimates mean</h2></div></div>
+        <div class="method-grid">
+          <div><h3>What is modeled?</h3><p>Payment impacts are estimated using 2024 Medicare utilization held constant and a modeled 2026 Medicare baseline. The 2027 phase-in uses the finalized fee schedule model, geographic PE weighting, and the finalized Modifier 25 reduction assumptions.</p></div>
+          <div><h3>What is hypothetical?</h3><p>The fully implemented PE scenario is an unstabilized long-run illustration. Future scenarios additionally assume 17000, 17004, 17110, and 17111 convert to 000-day globals; 0%, 20%, 50%, or 80% of a geographically adjusted 99212 value is removed from those base codes, but not from 17003.</p></div>
+          <div><h3>How does the slider work?</h3><p>The default reproduces the precomputed provider or aggregate result. Moving it scales the Modifier 25 dollar component by the ratio of the selected to modeled same-day rate. It does not rebuild encounter combinations or alter CF, RVU, or MPPR; it is an illustrative sensitivity calculation.</p></div>
+          <div><h3>What is uncertain?</h3><p>Provider utilization is historical and certain claims-level combinations are approximated. The geographic factors and ordinary-MPPR reranking are modeled estimates. The site does not predict changes to service volume, site of care, coding, G2211 usage, or future CMS/RUC decisions.</p></div>
+        </div>
+        <div class="disclaimer"><strong>Important:</strong> This is an independent policy modeling tool, not an official CMS payment calculator. Figures are estimates of Medicare Part B professional reimbursement, not total practice revenue. Hypothetical scenarios are not forecasts or enacted policy. Results may differ from actual paid claims.</div>
+      </section>
+    </main>
+
+    <footer><span>© 2026 medicare-cuts.skin · Independent dermatology payment impact analysis</span><span>Model: CY2027_FINAL_V2_SIM6_MAX80_2026-11-11</span></footer>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>
