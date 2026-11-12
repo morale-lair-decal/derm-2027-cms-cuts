@@ -5,3 +5,23 @@
 @media(max-width:760px){.ambient{display:none}}
 /* Keep the decorative glow inside desktop page bounds as well. */
 @media(min-width:761px){.ambient-one{right:0}}
+
+/* UI polish v2.2: clear slider states and progressive severity. */
+.future-option{border-width:1.5px;color:#fff4f6;transition:background .16s,border-color .16s,box-shadow .16s,transform .16s}
+.future-option small{color:#ffd5db;font-weight:620}
+.future-option[data-rate="0"]{background:#34232e;border-color:#654151}
+.future-option[data-rate="20"]{background:#512631;border-color:#89404b}
+.future-option[data-rate="50"]{background:#742836;border-color:#ae4858}
+.future-option[data-rate="80"]{background:#952d3d;border-color:#d45b69}
+.future-option:hover{filter:brightness(1.13)}
+.future-option.active{color:#fff;background:linear-gradient(120deg,#ad364b,#8a3049);border-color:#ffb5c1;box-shadow:inset 0 0 0 1px #ffdce1,0 0 0 2px #4b7284}
+.future-option[data-rate="0"].active{background:#493040}
+.future-option[data-rate="20"].active{background:#632d3d}
+.future-option[data-rate="50"].active{background:#812c41}
+.future-option[data-rate="80"].active{background:#a12e41}
+.future-option.active small{color:#fff0f2}
+/* Preserve percent-only privacy throughout the visible results. */
+.percent-only .component-card p[hidden]{display:none}
+.percent-only .hero-right{gap:10px}
+.comparison-row{grid-template-columns:minmax(130px,165px) 1fr 63px}
+@media(max-width:520px){.comparison-row{grid-template-columns:minmax(105px,125px) 1fr 58px;gap:8px}.comparison-label{font-size:10px}.future-option{font-size:17px}}

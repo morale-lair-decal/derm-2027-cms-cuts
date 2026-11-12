@@ -11,14 +11,14 @@
   const SCENARIO_LABELS = {
     '2027_phased': '2027 final rule · phased PE',
     'fully_implemented': 'Hypothetical fully implemented PE · current globals',
-    'future_000_m25_only': 'Hypothetical 000-day conversion · no RVU revaluation',
-    'future_000_min20': 'Hypothetical 000-day conversion · 20% of 99212 removed',
-    'future_000_mid50': 'Hypothetical 000-day conversion · 50% of 99212 removed',
-    'future_000_max80': 'Hypothetical 000-day conversion · 80% of 99212 removed',
+    'future_000_m25_only': 'Hypothetical LN2 zero-day conversion · no RVU reduction',
+    'future_000_min20': 'Hypothetical LN2 zero-day conversion · minimum RVU reduction',
+    'future_000_mid50': 'Hypothetical LN2 zero-day conversion · medium RVU reduction',
+    'future_000_max80': 'Hypothetical LN2 zero-day conversion · maximum RVU reduction',
   };
   const FUTURE_MAP = {0:'future_000_m25_only',20:'future_000_min20',50:'future_000_mid50',80:'future_000_max80'};
   const SCENARIOS = ['2027_phased','fully_implemented','future_000_m25_only','future_000_min20','future_000_mid50','future_000_max80'];
-  const SHORT_LABELS = ['2027 final','Full PE','000 / 0%','000 / 20%','000 / 50%','000 / 80%'];
+  const SHORT_LABELS = ['2027 final','Full PE','LN2 zero-day · none','LN2 zero-day · min','LN2 zero-day · mid','LN2 zero-day · max'];
   const STATES = {'AL':'Alabama','AK':'Alaska','AZ':'Arizona','AR':'Arkansas','CA':'California','CO':'Colorado','CT':'Connecticut','DE':'Delaware','FL':'Florida','GA':'Georgia','HI':'Hawaii','ID':'Idaho','IL':'Illinois','IN':'Indiana','IA':'Iowa','KS':'Kansas','KY':'Kentucky','LA':'Louisiana','ME':'Maine','MD':'Maryland','MA':'Massachusetts','MI':'Michigan','MN':'Minnesota','MS':'Mississippi','MO':'Missouri','MT':'Montana','NE':'Nebraska','NV':'Nevada','NH':'New Hampshire','NJ':'New Jersey','NM':'New Mexico','NY':'New York','NC':'North Carolina','ND':'North Dakota','OH':'Ohio','OK':'Oklahoma','OR':'Oregon','PA':'Pennsylvania','RI':'Rhode Island','SC':'South Carolina','SD':'South Dakota','TN':'Tennessee','TX':'Texas','UT':'Utah','VT':'Vermont','VA':'Virginia','WA':'Washington','WV':'West Virginia','WI':'Wisconsin','WY':'Wyoming','DC':'District of Columbia'};
   const state = {
     national: null, summaryById: new Map(), manifest: null,
@@ -44,6 +44,7 @@
   const fmtPct = v => {if(!Number.isFinite(v))return '—'; const two=Math.round((Math.abs(v)+1e-9)*100)/100;return `${v<0?'-':v>0?'+':''}${two.toFixed(2)}%`;};
   const fmtMoney = v => Number.isFinite(v) ? moneyFmt.format(v) : '—';
   const fmtMoneyTight = (v,plus=true) => { if (!Number.isFinite(v)) return '—'; const n=Math.abs(v),sgn=v<0?'-':v>0&&plus?'+':''; if (n>=1e9) return `${sgn}$${(n/1e9).toFixed(2)}B`; if(n>=1e6) return `${sgn}$${(n/1e6).toFixed(2)}M`; if(n>=1e3) return `${sgn}$${(n/1e3).toFixed(2)}K`; return moneyPreciseFmt.format(v); };
+  const fmtRemainingPct = v => Number.isFinite(v) ? `${v.toFixed(2)}%` : '—';
   const fmtNum = n => intFmt.format(n);
   function setText(id, value) { const n=$(id); if(n) n.textContent=String(value); }
   function showError(message) { state.error = message; const n=$('status-message'); n.textContent=message; n.hidden=false; }
@@ -51,7 +52,7 @@
   function toast(message) {const box=$('toast');box.textContent=message;box.hidden=false;clearTimeout(toast.timeout);toast.timeout=setTimeout(()=>box.hidden=true,3700);}
   async function readJSON(url) {
     const response=await fetch(url,{cache:'default'});
-    if (!response.ok) throw new Error(`Could not load ${url}: HTTP ${response.status}`);
+    if (!response.ok) throw new Error(`Could not load required model data: HTTP ${response.status}`);
     return await response.json();
   }
   function validateUnique(rows,label) {
@@ -65,16 +66,16 @@
     if(state.pending.has(id)) return state.pending.get(id);
     const promise=(async()=>{
       const data=await readJSON(`data/providers_${id}_v2.json`);
-      validateUnique(data,`providers_${id}_v2.json`);
+      validateUnique(data,'Physician scenario data');
       const target=state.summaryById.get(id);
       if(target){
         const s=data.reduce((acc,r)=>acc+val(r.total_dollar_cut),0);
-        if(Math.abs(s-val(target.total_dollar_cut))>75) throw new Error(`Provider-sum financial mismatch for ${id}. Expected ${target.total_dollar_cut}, received ${s}.`);
+        if(Math.abs(s-val(target.total_dollar_cut))>75) throw new Error(`Physician-sum financial mismatch for ${id}. Expected ${target.total_dollar_cut}, received ${s}.`);
       }
       const mapped=new Map(data.map(r=>[String(r.npi),r]));
       if(state.index){
         const absent=state.index.filter(p=>!mapped.has(String(p.npi)));
-        if(absent.length) throw new Error(`${absent.length} NPIs missing from ${id} provider data.`);
+        if(absent.length) throw new Error(`${absent.length} NPIs missing from ${id} physician data.`);
       }
       state.scenarioCache.set(id,mapped);
       return mapped;
@@ -129,13 +130,13 @@
       const national=state.summaryById.get(id);if(!national)return null;
       let pct=null;
       if(state.index){const em=state.index.reduce((a,r)=>a+val(r.total_ems),0);const enc=state.index.reduce((a,r)=>a+val(r.modeled_same_day_encounters),0);pct=em?100*enc/em:0;}
-      return {...national,defaultPct:pct,scopeTitle:'All U.S. Dermatology Practices',scopeSubtitle:'National Total · All modeled dermatology providers',scopeCode:'NATIONAL',scopeType:'NATIONAL AGGREGATE'};
+      return {...national,defaultPct:pct,scopeTitle:'All U.S. Dermatology Practices',scopeSubtitle:'National Total · All modeled dermatology physicians',scopeCode:'NATIONAL',scopeType:'NATIONAL AGGREGATE'};
     }
     const table=state.scenarioCache.get(id);if(!table)return null;
     if(scope.kind==='provider'){
       const row=table.get(scope.npi);if(!row)return null;
       const meta=state.namesByNpi.get(scope.npi),idx=state.indexByNpi.get(scope.npi);
-      return {...row,baseline_2026_dollars:val(row.rev_2026),providers:1,defaultPct:idx?val(idx.modeled_same_day_pct):0,scopeTitle:safeName(scope.npi),scopeSubtitle:meta?.practice_name||'Practice not listed in existing directory',scopeCode:scope.npi,scopeType:'INDIVIDUAL PROVIDER'};
+      return {...row,baseline_2026_dollars:val(row.rev_2026),providers:1,defaultPct:idx?val(idx.modeled_same_day_pct):0,scopeTitle:safeName(scope.npi),scopeSubtitle:meta?.practice_name||'Practice not listed in existing directory',scopeCode:scope.npi,scopeType:'INDIVIDUAL PHYSICIAN'};
     }
     if(scope.kind==='state'){
       const row=getAggregateForState(scope.code,id);if(!row)return null;
@@ -153,12 +154,12 @@
     $('results-section')?.scrollIntoView({behavior:'smooth',block:'start'});
   }
   function displayProfile(data){
-    if(!data){setText('profile-type',state.scope.kind==='state'?'STATE AGGREGATE':state.scope.kind==='provider'?'INDIVIDUAL PROVIDER':'NATIONAL AGGREGATE');setText('profile-name','Loading estimates…');setText('baseline-amount','—');setText('total-impact-value','—');setText('total-impact-percent','—');return;}
+    if(!data){setText('profile-type',state.scope.kind==='state'?'STATE AGGREGATE':state.scope.kind==='provider'?'INDIVIDUAL PHYSICIAN':'NATIONAL AGGREGATE');setText('profile-name','Loading estimates…');setText('baseline-amount','—');setText('total-impact-value','—');setText('total-impact-percent','—');return;}
     setText('profile-type',data.scopeType);setText('profile-name',data.scopeTitle);setText('profile-subtitle',data.scopeSubtitle);
-    setText('provider-count',data.providers===1?`NPI: ${data.scopeCode}`:`${fmtNum(data.providers)} dermatologists`);
+    setText('provider-count',data.providers===1?`NPI: ${data.scopeCode}`:`${fmtNum(data.providers)} physicians`);
     const baseline=val(data.baseline_2026_dollars);
-    setText('baseline-amount',fmtMoneyTight(baseline,false));
-    $('baseline-amount').title=fmtMoney(baseline);
+    setText('baseline-amount',state.display==='percent'?'100.00%':fmtMoneyTight(baseline,false));
+    $('baseline-amount').title=state.display==='percent'?'':fmtMoney(baseline);
   }
   function setSliderDefault(data){
     const rate=data&&Number.isFinite(data.defaultPct)?data.defaultPct:null;
@@ -175,7 +176,7 @@
     setText('slider-default-value',fmtRate(rate));
     setText('slider-value',fmtRate(state.selectedRate));
     const note=$('slider-note');
-    if(!adjustable){note.textContent='No modeled Modifier 25 exposure at the default rate. This provider has no usable per-encounter rate for a reliable slider adjustment.';}
+    if(!adjustable){note.textContent='No modeled Modifier 25 exposure at the default rate. This physician has no usable per-encounter rate for a reliable slider adjustment.';}
     else if(state.sliderCustomized){note.textContent='Sensitivity estimate: the selected rate scales the precomputed Modifier 25 amount. CF, RVU and provisional MPPR amounts are unchanged.';}
     else{note.textContent='At the default rate the figures exactly reproduce the modeled result. Moving the slider changes Modifier 25 only; encounter combinations and procedure mix stay fixed.';}
     return rate;
@@ -196,26 +197,29 @@
     const displayedPercent=(!state.sliderCustomized && data.total_percent_cut!==undefined) ? Number(data.total_percent_cut) : percent;
     const percentDisplay=state.display==='percent';
     setText('total-impact-value',percentDisplay?fmtPct(displayedPercent):fmtMoneyTight(total));
-    $('total-impact-value').title=fmtMoney(total);
+    $('total-impact-value').title=percentDisplay?'':fmtMoney(total);
     setText('total-impact-percent',fmtPct(displayedPercent));
-    setText('projected-revenue',fmtMoneyTight(revenue,false));
-    $('projected-revenue').title=fmtMoney(revenue);
+    setText('projected-revenue',percentDisplay?fmtRemainingPct(baseline?100+displayedPercent:0):fmtMoneyTight(revenue,false));
+    $('projected-revenue').title=percentDisplay?'':fmtMoney(revenue);
     function component(prefix,amount){
       setText(`${prefix}-impact`,percentDisplay?fmtPct(baseline?amount/baseline*100:0):fmtMoneyTight(amount));
       setText(`${prefix}-share`,baseline?`${fmtPct(amount/baseline*100)} of baseline`:'No baseline');
-      $(prefix+'-impact').title=fmtMoney(amount);
+      $(prefix+'-share').hidden=percentDisplay;
+      $(prefix+'-impact').title=percentDisplay?'':fmtMoney(amount);
     }
     component('cf',cf);component('rvu',rvu);component('m25',m25);
     $('mppr-component').hidden=!isFuture(id);
     if(isFuture(id)){
       setText('mppr-impact',percentDisplay?fmtPct(baseline?mppr/baseline*100:0):fmtMoneyTight(mppr));
       setText('mppr-share',`${fmtPct(baseline?mppr/baseline*100:0)} of baseline · provisional`);
+      $('mppr-share').hidden=percentDisplay;
+      $('mppr-impact').title=percentDisplay?'':fmtMoney(mppr);
     }
     $('mppr-disclosure').hidden=!isFuture(id) || Math.abs(mppr)<.005;
     if(isFuture(id)){
       const noCreditTotal=total-mppr;
-      setText('no-mppr-value',fmtMoneyTight(noCreditTotal));
-      setText('no-mppr-percent',`(${fmtPct(baseline?100*noCreditTotal/baseline:0)})`);
+      setText('no-mppr-value',percentDisplay?fmtPct(baseline?100*noCreditTotal/baseline:0):fmtMoneyTight(noCreditTotal));
+      setText('no-mppr-percent',percentDisplay?'':`(${fmtPct(baseline?100*noCreditTotal/baseline:0)})`);
     }
     $('state-directory').hidden=state.scope.kind!=='state';
     if(state.scope.kind==='state')renderStateDirectory();
@@ -240,10 +244,10 @@
       });box.appendChild(button);
     });
   }
-  function setDisplay(mode){state.display=mode;for(const [id,choice] of [['show-dollars','dollars'],['show-percent','percent']]){const btn=$(id);btn.classList.toggle('active',choice===mode);btn.setAttribute('aria-pressed',String(choice===mode));}render();}
+  function setDisplay(mode){state.display=mode;document.body.classList.toggle('percent-only',mode==='percent');for(const [id,choice] of [['show-dollars','dollars'],['show-percent','percent']]){const btn=$(id);btn.classList.toggle('active',choice===mode);btn.setAttribute('aria-pressed',String(choice===mode));}render();}
   function resetSlider(){state.sliderCustomized=false;state.selectedRate=null;render();}
   function normalizeLegacyRows(rows){
-    if(!Array.isArray(rows))throw new Error('Existing provider_data.json must be a JSON array.');
+    if(!Array.isArray(rows))throw new Error('Existing physician directory must be a JSON array.');
     const mapped=new Map();
     for(const r of rows){
       const npi=String(r.npi??'').trim();
@@ -255,11 +259,11 @@
   function buildSearchResults(query){
     const norm=clean(query),words=norm.split(/\s+/).filter(Boolean);if(!words.length)return [];
     const out=[];
-    if('national'.includes(norm)||'united states'.includes(norm)||norm==='us'||norm==='usa'||norm==='all')out.push({kind:'national',label:'All U.S. Dermatology Practices',secondary:'National total · 12,477 providers'});
+    if('national'.includes(norm)||'united states'.includes(norm)||norm==='us'||norm==='usa'||norm==='all')out.push({kind:'national',label:'All U.S. Dermatology Practices',secondary:'National total · 12,477 physicians'});
     for(const [code,name] of Object.entries(STATES)){
       const nameNorm=clean(name);if(words.every(w=>nameNorm.includes(w)||code.toLowerCase()===w)){
         const count=getStateMembers(code).length;
-        out.push({kind:'state',code,label:`${name} (${code})`,secondary:`Statewide aggregate · ${fmtNum(count)} modeled providers`});
+        out.push({kind:'state',code,label:`${name} (${code})`,secondary:`Statewide aggregate · ${fmtNum(count)} modeled physicians`});
       }
     }
     if(state.index){
@@ -274,7 +278,7 @@
       out.push(...matches);
     }
     // An explicit NPI lookup is always available even when the identity directory is unavailable.
-    if(!out.length && /^\d{10}$/.test(norm) && state.indexByNpi.has(norm)) out.push({kind:'provider',npi:norm,label:`NPI ${norm}`,secondary:'Open provider profile'});
+    if(!out.length && /^\d{10}$/.test(norm) && state.indexByNpi.has(norm)) out.push({kind:'provider',npi:norm,label:`NPI ${norm}`,secondary:'Open physician profile'});
     return out.slice(0,14);
   }
   function hideSearch(){$('search-results').hidden=true;$('provider-search').setAttribute('aria-expanded','false');state.activeSuggestion=-1;}
@@ -282,7 +286,7 @@
     const query=$('provider-search').value.trim();const root=$('search-results');
     if(!query){hideSearch();return;}
     const items=buildSearchResults(query);state.searchResults=items;state.activeSuggestion=-1;root.replaceChildren();
-    if(!items.length){const empty=document.createElement('div');empty.className='result-empty';empty.textContent='No matching providers or states found.';root.appendChild(empty);}
+    if(!items.length){const empty=document.createElement('div');empty.className='result-empty';empty.textContent='No matching physicians or states found.';root.appendChild(empty);}
     items.forEach((item,i)=>{
       const btn=document.createElement('button');btn.type='button';btn.className='search-result';btn.id=`suggestion-${i}`;btn.setAttribute('role','option');btn.setAttribute('aria-selected','false');
       const title=document.createElement('span');title.className='result-title';title.textContent=item.label;
@@ -299,7 +303,7 @@
   }
   function renderStateDirectory(){
     const code=state.scope.code,members=getStateMembers(code);
-    $('state-list-count').textContent=`${fmtNum(members.length)} providers`;
+    $('state-list-count').textContent=`${fmtNum(members.length)} physicians`;
     const list=$('state-list');list.replaceChildren();
     const sorted=members.slice().sort((a,b)=>safeName(a).localeCompare(safeName(b)));
     for(const npi of sorted.slice(0,state.stateMoreCount)){
@@ -313,36 +317,80 @@
   }
   function roundedRect(ctx,x,y,w,h,r=10){ctx.beginPath();ctx.roundRect(x,y,w,h,r);}
   function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight,maxLines=3){
-    const words=text.split(/\s+/),lines=[];let line='';
-    for(const word of words){let test=line?`${line} ${word}`:word;if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=word;}else line=test;}
+    const words=String(text).split(/\s+/),lines=[];let line='';
+    for(const word of words){const test=line?`${line} ${word}`:word;
+      if(ctx.measureText(test).width>maxWidth && line){lines.push(line);line=word;}else line=test;}
     if(line)lines.push(line);
-    for(const [i,l] of lines.slice(0,maxLines).entries())ctx.fillText(i===maxLines-1&&lines.length>maxLines?l.slice(0,-2)+'…':l,x,y+i*lineHeight);
+    for(const [i,l] of lines.slice(0,maxLines).entries()){
+      const output=(i===maxLines-1 && lines.length>maxLines)?l.slice(0,-2)+'…':l;
+      ctx.fillText(output,x,y+i*lineHeight);
+    }
     return y+Math.min(lines.length,maxLines)*lineHeight;
+  }
+  function shareScenarioDetails(scenarioId){
+    const details={
+      '2027_phased':['CY 2027 final rule','Phased practice expense'],
+      'fully_implemented':['Hypothetical fully implemented PE','Current global periods'],
+      'future_000_m25_only':['Hypothetical LN2 zero-day conversion','No RVU reduction'],
+      'future_000_min20':['Hypothetical LN2 zero-day conversion','Minimum RVU reduction'],
+      'future_000_mid50':['Hypothetical LN2 zero-day conversion','Medium RVU reduction'],
+      'future_000_max80':['Hypothetical LN2 zero-day conversion','Maximum RVU reduction'],
+    };
+    return details[scenarioId]||['Dermatology Medicare payment model',''];
+  }
+  function makeShareCanvas(model,onlyPercent){
+    const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1080;
+    const ctx=canvas.getContext('2d');
+    const back=ctx.createLinearGradient(0,0,1080,1080);
+    back.addColorStop(0,'#101b30');back.addColorStop(1,'#0a1425');
+    ctx.fillStyle=back;ctx.fillRect(0,0,1080,1080);
+    // Inset, padded 1080x1080 border makes the square stand out on social feeds.
+    ctx.strokeStyle='#5d829b';ctx.lineWidth=3;roundedRect(ctx,34,34,1012,1012,23);ctx.stroke();
+    ctx.strokeStyle='#263e55';ctx.lineWidth=1;roundedRect(ctx,45,45,990,990,19);ctx.stroke();
+    ctx.textAlign='center';ctx.textBaseline='alphabetic';
+    ctx.fillStyle='#7fded6';ctx.font='800 31px system-ui,sans-serif';ctx.fillText('medicare-cuts.skin',540,115);
+    ctx.fillStyle='#97adc3';ctx.font='700 21px system-ui,sans-serif';ctx.fillText('CY 2027  •  DERMATOLOGY MEDICARE PAYMENT MODEL',540,167);
+    ctx.strokeStyle='#36546b';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(130,196);ctx.lineTo(950,196);ctx.stroke();
+    ctx.fillStyle='#f3f8fc';ctx.font='800 49px system-ui,sans-serif';
+    const nameBottom=wrapCanvasText(ctx,model.scopeTitle,540,270,895,60,2);
+    ctx.fillStyle='#afc2d3';ctx.font='25px system-ui,sans-serif';
+    wrapCanvasText(ctx,model.scopeSubtitle,540,Math.max(338,nameBottom+6),890,33,2);
+    ctx.fillStyle='#172a43';roundedRect(ctx,86,466,908,289,23);ctx.fill();
+    ctx.strokeStyle='#49637a';ctx.lineWidth=1.5;roundedRect(ctx,86,466,908,289,23);ctx.stroke();
+    ctx.fillStyle='#e5bec8';ctx.font='750 21px system-ui,sans-serif';ctx.fillText('NET PAYMENT CHANGE',540,524);
+    ctx.fillStyle='#ff9ba9';ctx.font='850 98px system-ui,sans-serif';ctx.fillText(fmtPct(model.percent),540,641);
+    ctx.fillStyle='#e9f5fb';
+    if(onlyPercent){
+      ctx.font='550 29px system-ui,sans-serif';
+      ctx.fillText(`${fmtRemainingPct(100+model.percent)} of 2026 baseline remains`,540,705);
+    }else{
+      ctx.font='650 39px system-ui,sans-serif';
+      ctx.fillText(`Net impact: ${fmtMoneyTight(model.total)}`,540,705);
+      ctx.font='23px system-ui,sans-serif';ctx.fillStyle='#abc3d7';
+      ctx.fillText(`2026 modeled baseline: ${fmtMoneyTight(model.baseline_2026_dollars,false)}`,540,802);
+    }
+    const [scenarioLine,reductionLine]=shareScenarioDetails(model.scenarioId);
+    ctx.fillStyle='#e4eef6';ctx.font='700 26px system-ui,sans-serif';
+    ctx.fillText(scenarioLine,540,onlyPercent?837:863);
+    ctx.fillStyle='#b5c7d8';ctx.font='24px system-ui,sans-serif';
+    ctx.fillText(reductionLine,540,onlyPercent?889:911);
+    ctx.fillStyle='#86d8d1';ctx.font='23px system-ui,sans-serif';
+    ctx.fillText(`Modifier 25 same-day rate: ${fmtRate(model.selectedRate)}`,540,onlyPercent?952:968);
+    return canvas;
   }
   async function copyShareGraphic(){
     const model=state.lastRendered;if(!model){toast('Financial results are still loading.');return;}
-    const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1080;
-    const ctx=canvas.getContext('2d');
-    const back=ctx.createLinearGradient(0,0,1080,1080);back.addColorStop(0,'#101b30');back.addColorStop(1,'#0b1425');ctx.fillStyle=back;ctx.fillRect(0,0,1080,1080);
-    const accent=ctx.createLinearGradient(0,100,950,900);accent.addColorStop(0,'#66dbcc');accent.addColorStop(1,'#63afe2');ctx.fillStyle=accent;ctx.fillRect(72,79,14,79);
-    ctx.fillStyle='#7fded6';ctx.font='700 31px system-ui,sans-serif';ctx.fillText('medicare-cuts.skin',114,132);
-    ctx.fillStyle='#95aeca';ctx.font='700 22px system-ui,sans-serif';ctx.fillText('CY 2027  •  DERMATOLOGY MEDICARE PAYMENT MODEL',74,215);
-    ctx.fillStyle='#f3f8fc';ctx.font='800 47px system-ui,sans-serif';const y=wrapCanvasText(ctx,model.scopeTitle,74,310,930,58,3);
-    ctx.fillStyle='#a4b9ce';ctx.font='26px system-ui,sans-serif';wrapCanvasText(ctx,model.scopeSubtitle,74,y+17,920,33,2);
-    ctx.fillStyle='#172a43';roundedRect(ctx,70,490,940,260,22);ctx.fill();
-    ctx.fillStyle='#f59daa';ctx.font='800 93px system-ui,sans-serif';ctx.fillText(fmtPct(model.percent),111,635);
-    ctx.fillStyle='#e8f3fb';ctx.font='600 35px system-ui,sans-serif';ctx.fillText(`Net impact: ${fmtMoneyTight(model.total)}`,113,702);
-    ctx.fillStyle='#a0b9cd';ctx.font='23px system-ui,sans-serif';ctx.fillText(`2026 modeled baseline: ${fmtMoneyTight(model.baseline_2026_dollars,false)}`,75,815);
-    ctx.font='21px system-ui,sans-serif';wrapCanvasText(ctx,SCENARIO_LABELS[model.scenarioId],75,860,935,29,2);
-    ctx.fillText(`Modifier 25 same-day rate: ${fmtRate(model.selectedRate)}`,75,924);
-    ctx.strokeStyle='#344c66';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(73,961);ctx.lineTo(1007,961);ctx.stroke();
-    ctx.fillStyle='#91a7be';ctx.font='19px system-ui,sans-serif';ctx.fillText('Independent estimate · Static 2024 utilization · Hypotheticals are not CMS policy',74,1001);
+    const onlyPercent=state.display==='percent';
+    const canvas=makeShareCanvas(model,onlyPercent);
     const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
     if(!blob){toast('Could not create share image.');return;}
     if(navigator.clipboard&&window.ClipboardItem){
       try{await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);toast('Graphic copied to clipboard.');return;}catch(_){/* download fallback */}
     }
-    const href=URL.createObjectURL(blob),a=document.createElement('a');a.href=href;a.download=`CMS_2027_${model.scopeCode}_${model.scenarioId}.png`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(href),1000);toast('Graphic downloaded as PNG.');
+    const href=URL.createObjectURL(blob),a=document.createElement('a');a.href=href;
+    a.download=`CMS_2027_${model.scopeCode}_${model.scenarioId}_${onlyPercent?'percent':'dollars'}.png`;
+    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(href),1000);
+    toast('Graphic downloaded as PNG.');
   }
   function wire(){
     document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>switchMode(b.dataset.mode)));
@@ -383,28 +431,26 @@
       activateScenario(currentScenario());
     }catch(err){showError(`Failed to load national model: ${err.message}`);return;}
     try{
-      const index=await readJSON(FILES.index);validateUnique(index,'Provider index');
+      const index=await readJSON(FILES.index);validateUnique(index,'Physician index');
       state.index=index;state.indexByNpi=new Map(index.map(x=>[String(x.npi),x]));
-      $('search-status').textContent='NPI searches ready · Loading names and states…';render();
+      render();
       // Try the existing GitHub file. Never reuse its old financial or percentile fields.
       try{
         const legacy=await readJSON(FILES.legacyIdentity);
         state.namesByNpi=normalizeLegacyRows(legacy);
         state.directoryReady=true;
         const matched=state.namesByNpi.size;
-        $('search-status').textContent=`${fmtNum(matched)} physician identities linked · Name, NPI, state and national search ready`;
         if(matched<index.length){console.warn(`${index.length-matched} model NPIs not in existing provider_data.json. State totals are incomplete until identities are supplied.`);
           showError(`${fmtNum(index.length-matched)} modeled NPIs have no state/name match in the existing website data. National numbers are complete; statewide totals exclude unmatched records.`);
         }
       }catch(err){
-        $('search-status').textContent='NPI searches ready · Name/state directory unavailable';
         state.directoryReady=false;
-        showError('Existing data/provider_data.json could not be loaded. National and NPI results work, but name/state searches require retaining that original GitHub file.');
+        showError('Physician directory could not be loaded. National and NPI results work, but name/state searches require retaining the original directory file.');
       }
       render();
-    }catch(err){showError(`Could not load provider index: ${err.message}`);}
+    }catch(err){showError(`Could not load physician index: ${err.message}`);}
   }
   document.addEventListener('DOMContentLoaded',boot);
   // Stable, read-only hooks for browser-based QA. No model assumptions hidden in tests.
-  window.__CMS2027_QA__={getSnapshot:()=>({scenario:currentScenario(),scope:state.scope,model:state.lastRendered,nationalReady:!!state.national,identitiesLinked:state.namesByNpi.size,cachedScenarios:[...state.scenarioCache.keys()],error:state.error}),getStateMembers,buildSearchResults};
+  window.__CMS2027_QA__={getSnapshot:()=>({scenario:currentScenario(),scope:state.scope,model:state.lastRendered,nationalReady:!!state.national,identitiesLinked:state.namesByNpi.size,cachedScenarios:[...state.scenarioCache.keys()],error:state.error}),getStateMembers,buildSearchResults,makeShareCanvas:()=>state.lastRendered?makeShareCanvas(state.lastRendered,state.display==='percent'):null};
 })();
